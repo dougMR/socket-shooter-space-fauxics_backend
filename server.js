@@ -8,8 +8,20 @@ https://www.youtube.com/watch?v=djMy4QsPWiI
 
 import express from "express";
 import cors from "cors";
+// import { db, Leader } from "./db/db.js";
 const app = express();
 app.use(cors());
+// app.use(
+//     cors({
+//         credentials: false,
+//         origin: [
+//             "http://localhost:5500",
+//             "https://mega-space-faceoff.netlify.app",
+//             "https://www.mega-space-faceoff.netlify.app",
+//             // "https://dougmr-blog-frontend.herokuapp.com",
+//         ],
+//     })
+// );
 
 // socket.io setup
 import http from "http";
@@ -26,17 +38,31 @@ const io = new Server(server, {
         methods: ["GET", "POST"],
     },
 });
+// const sequelize = require('socket.io-sequelize');
+// io.use(sequelize(db,))
+
+// db tables
 
 //
 //     ^ SOCKET.IO SETUP ^
 //
 //////////////////////////////////////////////////////////////////////////////////////
 
-import { players, disconnectedPlayers, reconnectPlayerByUUID, addPlayer } from "./module-players.js";
+import {
+    players,
+    disconnectedPlayers,
+    reconnectPlayerByUUID,
+    addPlayer,
+    resetPlayers,
+    reassignStartingPositions,
+} from "./module-players.js";
 import { Missile } from "./module-class-missile.js";
 import { startGameLoop } from "./module-game-loop.js";
 import { getCos, getSin } from "./module-angles.js";
-import { generateAsteroids, generateObstacles} from "./module-generate-game-pieces.js";
+import {
+    generateAsteroids,
+    generateObstacles,
+} from "./module-generate-game-pieces.js";
 
 //
 //     ^ IMPORTS ^
@@ -50,24 +76,29 @@ const emitPlayers = () => {
 };
 
 const startGame = () => {
+    console.log("startGame()");
     // generateObstacles();
     asteroids.length = 0;
+    obstacles.length = 0;
+    resetPlayers();
     generateObstacles();
     generateAsteroids(50);
+    io.emit("startGame");
     startGameLoop();
 };
 
 const emitEndGame = () => {
     io.emit("endGame");
-}
+    setTimeout(reassignStartingPositions, 3000);
+};
 
 const stopSound = (soundString) => {
     io.emit("stopSound", soundString);
 };
 
 const emitSound = (soundString) => {
-    io.emit("playSound",soundString);
-}
+    io.emit("playSound", soundString);
+};
 
 // const emitDraw = () => {
 //     io.emit
@@ -84,9 +115,18 @@ const emitGameState = () => {
         debris: debris.map((d) => d.clientVersion),
         obstacles: obstacles.map((o) => o.clientVersion),
         ships: ships.map((s) => s.clientVersion),
+        players: players.map((p) => p.clientVersion),
         // add players: when scoring is implemented
     };
     io.emit("updateGameData", gameData);
+};
+
+const checkAllPlayersHere = () => {
+    return !players.some((p) => p.allHere === false);
+};
+
+const checkAllPlayersReady = () => {
+    return !players.some((p) => p.ready === false);
 };
 
 // POINT OF ENTRY
@@ -130,6 +170,7 @@ const disconnectAllNonPlayerSockets = () => {
 };
 
 io.on("connection", (socket) => {
+    console.log("socket connected: ", socket);
     socket.on("join_game", (playerName, uuid, callback) => {
         // Manual join
         console.log("--");
@@ -141,11 +182,12 @@ io.on("connection", (socket) => {
         if (result?.success) {
             emitPlayers();
         }
+        callback(result);
         // disconnectAllNonPlayerSockets();
     });
 
     socket.on("rejoin_game", (uuid, clientCallback) => {
-        console.log("rejoin_game called");
+        console.log("rejoin_game()");
         console.log("uuid:", uuid);
         console.log("clientCallback:", clientCallback);
         // tells client how long to store connection data
@@ -159,7 +201,7 @@ io.on("connection", (socket) => {
         // tell client if reconnection works
         if (uuid && clientCallback) {
             const success = reconnectPlayerByUUID(uuid, socket.id);
-            console.log('rejoin success:',success);
+            console.log("rejoin success:", success);
             clientCallback({
                 success,
                 name: players.find((p) => p.id === socket.id)?.name,
@@ -169,10 +211,57 @@ io.on("connection", (socket) => {
         disconnectAllNonPlayerSockets();
     });
 
-    socket.on("start_game", () => {
-        console.log("start_game");
-        startGame();
+    socket.on("player_ready", (yesOrNo) => {
+        console.log("player_ready", yesOrNo);
+        // If all connected players are ready, start game
+        const socketPlayer = players.find((p) => p.id === socket.id);
+        if (!socketPlayer) return;
+        socketPlayer.ready = true;
+        if (checkAllPlayersReady()) {
+            // all players are ready
+            if (!checkAllPlayersHere()) {
+                // io.emit("pollAllHere");
+            } else {
+                // everyone here and ready
+                startGame();
+            }
+        }
     });
+
+    socket.on("vote_all_here", (yesOrNo) => {
+        console.log("vote_all_here", yesOrNo);
+        // set this player's allHere (all must be true to start game)
+        console.log("socket.id:", socket.id);
+        console.log(
+            "players: ",
+            players.map((p) => p.name)
+        );
+        console.log(
+            "ids:",
+            players.map((p) => p.id)
+        );
+        players.find((p) => p.id === socket.id).allHere = yesOrNo;
+        // check everyone says we're all here
+        if (checkAllPlayersHere()) {
+            // all here
+            // double check we're all ready
+            if (checkAllPlayersReady()) {
+                // everyone's here and ready
+
+                startGame();
+            }
+        }
+        // else {
+        //     setTimeout(() => {
+        //         io.emit("pollAllHere");
+        //     }, 5000);
+        // }
+    });
+
+    // socket.on("start_game", () => {
+    //     console.log("start_game");
+    //     startGame();
+    // });
 
     // Ship
 
@@ -212,7 +301,7 @@ io.on("connection", (socket) => {
             missiles.push(missile);
             missile.myArray = missiles;
             missile.myShip = ship;
-            // console.log("shot missile: ",missile);
+            // console.log("shot missile - p.id: ",missile.myShip.playerId);
         }
     });
 
@@ -285,7 +374,117 @@ io.on("connection", (socket) => {
         //     });
         // }
     });
+    //
+    // DB "API" Endpoints
+    //
+    // socket.on("get_leaderboard", async (callback) => {
+    //     const leaders = await Leader.findAll();
+    //     callback(leaders.sort(sortLeaders));
+    // });
+    // socket.on("submit_score",async(player)=>{
+    //     const leaders = await Leader.findAll();
+    //     let addPlayer = false;
+    //     if (leaders.length < 10) {
+    //         // add this player
+    //         addPlayer = true;
+    //     } else {
+    //         // get leaderboard player with lowest score
+    //         const lowestScorePlayer = leaders.reduce((acc, curr) => {
+    //             if (curr.score < acc.score) {
+    //                 return curr;
+    //             }
+    //             return acc;
+    //         }, leaders[0]);
+    //         if (lowestScorePlayer.score < player.score) {
+    //             // remove lowestScorePlayer
+    //             await Leader.destroy({ where: { id: lowestScorePlayer.id } });
+    //             // add this player
+    //             addPlayer = true;
+    //         }
+    //     }
+    //     if (addPlayer) {
+    //         await Leader.create({
+    //             player_name: player.name,
+    //             score: player.score,
+    //         });
+    //         const leaders = await Leader.findAll();
+    //         res.send({ leaders: leaders.sort(sortLeaders) });
+    //         res.send({
+    //             leaderboard: leaders,
+    //             success: true,
+    //             message: player.name + " added to leaderboard.",
+    //         });
+    //     } else {
+    //         const leaders = await Leader.findAll();
+    //         res.send({
+    //             leaderboard: leaders.sort(sortLeaders),
+    //             success: false,
+    //             message: player.name + " not added to leaderboard.",
+    //         });
+    //     }
+    // });
 });
+//
+// API Endpoints
+//
+const sortLeaders = (a, b) => {
+    if (a.score > b.score) {
+        return -1;
+    }
+    if (a.score > b.score) {
+        return 1;
+    }
+    return 0;
+};
+app.get("/", (req, res) => {
+    res.send({ hello: "world" });
+});
+// app.get("/leaderboard", async (req, res) => {
+//     const leaders = await Leader.findAll();
+//     res.send({ leaders: leaders.sort(sortLeaders) });
+// });
+// app.post("/leader", async (req, res) => {
+//     const leaders = await Leader.findAll();
+//     let addPlayer = false;
+//     if (leaders.length < 10) {
+//         // add this player
+//         addPlayer = true;
+//     } else {
+//         // get leaderboard player with lowest score
+//         const lowestScorePlayer = leaders.reduce((acc, curr) => {
+//             if (curr.score < acc.score) {
+//                 return curr;
+//             }
+//             return acc;
+//         }, leaders[0]);
+//         if (lowestScorePlayer.score < req.body.score) {
+//             // remove lowestScorePlayer
+//             await Leader.destroy({ where: { id: lowestScorePlayer.id } });
+//             // add this player
+//             addPlayer = true;
+//         }
+//     }
+//     if (addPlayer) {
+//         await Leader.create({
+//             player_name: req.body.name,
+//             score: req.body.score,
+//         });
+//         const leaders = await Leader.findAll();
+//         res.send({ leaders: leaders.sort(sortLeaders) });
+//         res.send({
+//             leaderboard: leaders,
+//             success: true,
+//             message: req.body.name + " added to leaderboard.",
+//         });
+//     } else {
+//         const leaders = await Leader.findAll();
+//         res.send({
+//             leaderboard: leaders.sort(sortLeaders),
+//             success: false,
+//             message: req.body.name + " not added to leaderboard.",
+//         });
+//     }
+// });
 
 server.listen(process.env.PORT || 3000, () =>
     console.log(`server running!  It Lives!`)
@@ -301,5 +500,5 @@ export {
     emitGameState,
     emitSound,
     stopSound,
-    emitEndGame
+    emitEndGame,
 };

@@ -138,7 +138,7 @@ function gameLoop() {
 
 const startGameLoop = () => {
     startTime = null;
-    setImmediate(gameLoop);
+    gameLoop();
 };
 // how best to stop game loop
 

@@ -51,7 +51,8 @@ const explode = (gO) => {
     // mass = 0 to 1
     mass = mass === undefined ? 1 : mass;
     let particleNum = 36 + Math.round(50 * mass);
-    let maxSpeed = 0.5 + mass * 0.5;
+    // let maxSpeed = 0.5 + mass * 0.5;
+    let maxSpeed = 0.3 + mass * 0.3;
 
     for (let i = 0; i < particleNum; i++) {
         let speed = 0.01 + Math.random() * (maxSpeed - 0.01);

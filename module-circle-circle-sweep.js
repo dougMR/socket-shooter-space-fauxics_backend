@@ -1,6 +1,23 @@
 import { getCos, getSin, radiansToDegrees } from "./module-angles.js";
+import { players } from "./module-players.js";
 
-
+const handlePoints = (missile, target) => {
+    // console.log("handlePoints() target type:",target.type);
+    // console.log("missile.playerId",missile.myShip.playerId);
+    // console.log('playerIds: ',players.map(p=>p.id));
+    // console.log('playerUUIDs: ',players.map(p=>p.uuid));
+    
+    const missilePlayer = players.find((p) => p.id === missile.myShip.playerId);
+    switch (target.type) {
+        case "ship":
+            missilePlayer.score += 20;
+            break;
+        case "asteroid":
+            missilePlayer.score++;
+            // console.log(missilePlayer.name + " - " + missilePlayer.score);
+            break;
+    }
+};
 
 // ===============================
 
@@ -10,7 +27,8 @@ function checkHit(circles) {
     for (let i = 0; i < circles.length; i++) {
         const A = circles[i];
         for (var j = i + 1; j < circles.length; j++) {
-            const B = circles[j]
+            const B = circles[j];
+            // this needs to become more generic.  checking whether a circle is a missile shouldn't happen here
             if (A.type !== "missile" && B.type !== "missile") {
                 stopOverlap(A, B);
             }
@@ -19,6 +37,11 @@ function checkHit(circles) {
                 // missile hit something
                 // destroy both
                 // console.log("DESTORY");
+                if (A.type === "missile") {
+                    handlePoints(A, B);
+                } else if (B.type === "missile") {
+                    handlePoints(B, A);
+                }
                 exploders.push(A, B);
                 break;
             } else if (hit.hit) {

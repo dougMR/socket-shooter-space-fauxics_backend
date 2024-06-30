@@ -28,6 +28,7 @@ class Circle {
         this._mass = mass;
         this._moveAngle = this._facing = facing;
         this._velocity = velocity;
+        
         this._color = color;
         this._image = null;
         this._type = "none";
@@ -49,7 +50,8 @@ class Circle {
             const thrustY = getSin(this._facing) * amount;
             this.vx += thrustX;
             this.vy += thrustY;
-            this.velocity = Math.max(-1, Math.min(1, this.velocity));
+            // this.velocity = Math.max(-1, Math.min(1, this.velocity));
+            this.velocity = Math.max(-0.5, Math.min(0.5, this.velocity));
         };
         this.decelerate = () => {
             this.velocity *= this._deceleration;

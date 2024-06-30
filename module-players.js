@@ -6,6 +6,28 @@ import { ships } from "./server.js";
 const maxPlayers = 8;
 const disconnectedPlayers = [];
 const players = [];
+const shipColors = [
+    "red",
+    "orange",
+    "yellow",
+    "limegreen",
+    "blue",
+    "purple",
+    "violet",
+    "#444",
+];
+
+const resetPlayers = () => {
+    // resest existing players for new game
+    ships.length = 0;
+    for(const p of players){
+        p.score = 0;
+        ships.push(p.ship);
+        p.ready = false;
+        p.allHere = false;
+    }
+    reassignStartingPositions();
+}
 
 const reassignStartingPositions = () => {
     // put players in circle at edge of playing field, facing towards center
@@ -27,13 +49,17 @@ const addPlayer = (name, socketId, uuid) => {
     if (players.length >= maxPlayers) {
         return { error: "Maximum players reached.  Can't add more." };
     }
+    console.log("players.length:",players.length);
+    console.log('players: ',players.map(p=>p.name));
     if (
+        name &&
         !players.some(
-            (player) => player.name.toLowerCase() === name.toLowerCase()
+            (player) => player.name?.toLowerCase() === name?.toLowerCase()
         )
     ) {
-        let ship = new Ship(50, 95, 2, 2, 270, 0, "#88ccFF");
+        let ship = new Ship(50, 95, 1.5, 2, 270, 0, shipColors[players.length]);
         ship.myArray = ships;
+        // ship.type = "ship";
         ships.push(ship);
         // const shipImage = new Image(); // Create new img element
         // shipImage.src = "./images/spaceship.png"; // Set source path
@@ -48,6 +74,8 @@ const addPlayer = (name, socketId, uuid) => {
             uuid,
             score: 0,
             ship,
+            ready: false,
+            allHere: false,
             get clientVersion() {
                 return {
                     id: this.id,
@@ -59,13 +87,16 @@ const addPlayer = (name, socketId, uuid) => {
             },
         };
         players.push(newPlayer);
+        newPlayer.ship.playerId = socketId;
         // reassign all seats
         reassignStartingPositions(players);
+        console.log("newPlayer:", newPlayer);
         return { success: `${newPlayer.name} added to game.` };
     }
     console.log("name already in use.");
     return { error: "Please choose another name." };
 };
+
 
 const reconnectPlayerByUUID = (uuid, socketId) => {
     console.log("reconnectPlayerByUUID()");
@@ -84,7 +115,7 @@ const reconnectPlayerByUUID = (uuid, socketId) => {
         return false;
     } else {
         // player found
-        foundPlayer.id = socketId;
+        foundPlayer.id = foundPlayer.ship.playerId = socketId;
         clearTimeout(foundPlayer.disconnectTimer);
         // if we found them in disconnectedPlayers, put them in players
         if (!players.includes(foundPlayer)) players.push(foundPlayer);
@@ -92,4 +123,4 @@ const reconnectPlayerByUUID = (uuid, socketId) => {
     }
 };
 
-export { addPlayer, reconnectPlayerByUUID, players, disconnectedPlayers };
+export { addPlayer, reconnectPlayerByUUID, players, disconnectedPlayers, resetPlayers, reassignStartingPositions };

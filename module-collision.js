@@ -9,6 +9,7 @@ import { checkCircleCollideRect } from "./module-circle-rect-collision.js";
 
 const checkHitObjects = () => {
     // this checks collision during the frame, transfers momentum, moves objects to point of contact plus new velocity
+    // this needs to become more generic.  specifying asteroids, missiles etc should happen in game-loop or elsewhere, not here
     const exploders = checkHit([...asteroids, ...missiles, ...ships]);
     for (const gO of exploders) {
         explode(gO);
