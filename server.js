@@ -170,7 +170,7 @@ const disconnectAllNonPlayerSockets = () => {
 };
 
 io.on("connection", (socket) => {
-    console.log("socket connected: ", socket);
+    // console.log("socket connected: ", socket);
     socket.on("join_game", (playerName, uuid, callback) => {
         // Manual join
         console.log("--");

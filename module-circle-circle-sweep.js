@@ -6,11 +6,12 @@ const handlePoints = (missile, target) => {
     // console.log("missile.playerId",missile.myShip.playerId);
     // console.log('playerIds: ',players.map(p=>p.id));
     // console.log('playerUUIDs: ',players.map(p=>p.uuid));
-    
+
     const missilePlayer = players.find((p) => p.id === missile.myShip.playerId);
     switch (target.type) {
         case "ship":
-            missilePlayer.score += 20;
+            // IS this the only place we can know who shot the ship?
+            missilePlayer.score += 5;
             break;
         case "asteroid":
             missilePlayer.score++;
@@ -37,11 +38,25 @@ function checkHit(circles) {
                 // missile hit something
                 // destroy both
                 // console.log("DESTORY");
+
                 if (A.type === "missile") {
                     handlePoints(A, B);
+                    // move one last time
+                    A.x += A.vx;
+                    A.y += A.vy;
+                    // transfer missile's movement direction to target, for directional explosion
+                    B.vx += A.vx * 0.4;
+                    B.vy += A.vy * 0.4;
                 } else if (B.type === "missile") {
                     handlePoints(B, A);
+                    // move one last time
+                    B.x += B.vx;
+                    B.y += B.vy;
+                    // transfer missile's movement direction to target, for directional explosion
+                    A.vx += B.vx * 0.4;
+                    A.vy += B.vy * 0.4;
                 }
+
                 exploders.push(A, B);
                 break;
             } else if (hit.hit) {

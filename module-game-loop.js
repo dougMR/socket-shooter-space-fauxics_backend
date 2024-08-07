@@ -13,6 +13,7 @@ import {
     checkCirclesHitRectangles,
     checkHitObjects,
 } from "./module-collision.js";
+import { players } from "./module-players.js";
 
 import { stopCircleRectOverlap } from "./module-circle-rect-intersect.js";
 
@@ -67,14 +68,6 @@ function gameLoop() {
     checkHitObjects();
     checkCirclesHitRectangles();
 
-    // move / draw ships
-    // console.log("ships: ", ships);
-    for (const ship of ships) {
-        ship.move();
-        keepInBounds(ship);
-        // ship.draw();
-    }
-
     // draw asteroids
     for (const a of asteroids) {
         const oldV = a.velocity;
@@ -117,15 +110,50 @@ function gameLoop() {
             m.destroy();
         }
     }
+
+    // move / draw ships
+    // console.log("ships: ", ships);
+    for (const ship of ships) {
+        ship.move();
+        keepInBounds(ship);
+        for (const o of obstacles) {
+            // undo overlaps
+            stopCircleRectOverlap(ship, o);
+        }
+        // ship.draw();
+    }
     const timePassed = (timeStamp - startTime) / 1000;
-    const secondsLeft = Math.max(0, totalSeconds - timePassed);
+    let secondsLeft = Math.max(0, Math.floor(totalSeconds - timePassed));
+    
+
+    if (ships.length === 1 && !timingOut && players.length > 1) {
+        // Last player.  Give them 1 point for each remaining second, and end game.
+        timingOut = true;
+        console.log("One Alive!!");
+        setTimeout(() => {
+            console.log("End the Game");
+            console.log("#ships:", ships.length);
+            console.log("#players:", players.length);
+            if (ships.length > 0) {
+                players.find((p) => p.ship === ships[0]).score +=
+                    Math.floor(secondsLeft);
+                    console.log("secondsLeft (to award to surviving player):",secondsLeft);
+                    // emitTime(Math.floor(secondsLeft));
+            }
+            timedOut = true;
+        }, 1000);
+    } else if (ships.length === 0) {
+        // No players left.  End game.
+        secondsLeft = 0;
+    }
+
     if (secondsLeft !== prevSecondsLeft) {
         prevSecondsLeft = secondsLeft;
         emitTime(Math.floor(secondsLeft));
+        console.log("secondsLeft (main loop):",secondsLeft);
     }
-
     emitGameState();
-    if (secondsLeft > 0) {
+    if (secondsLeft > 0 && !timedOut) {
         // setImmediate(gameLoop);
         setTimeout(gameLoop, 17);
     } else {
@@ -138,12 +166,15 @@ function gameLoop() {
 
 const startGameLoop = () => {
     startTime = null;
+    timedOut = timingOut = false;
     gameLoop();
 };
 // how best to stop game loop
 
-let totalSeconds = 31;
+let totalSeconds = 61;
 let startTime = null;
 let prevSecondsLeft = 0;
+let timingOut = false;
+let timedOut = false;
 
 export { startGameLoop };

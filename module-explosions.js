@@ -1,7 +1,6 @@
 import { asteroids, ships, debris, emitSound } from "./server.js";
-import {mixHexColors} from "./libs/colorUtilities.js"
+import { mixHexColors } from "./libs/colorUtilities.js";
 import { Circle } from "./module-class-circle.js";
-
 
 // Explosions
 //
@@ -44,39 +43,49 @@ const explode = (gO) => {
     const swRadius = 4 + gO.radius * 4;
     detonateShockwave(x, y, swRadius);
     // Debris
-    let startColor = "#ff0000";
-    let endColor = "#ffff00";
-    let midColor = mixHexColors(startColor, endColor, 50);
+    let yellow = "#ffff00"; //"#ff0000";//
+    let red = "#ff0000"; //"#ffff00"; //
+    // let midColor = mixHexColors(startColor, endColor, 50);
     let mass = gO.mass;
     // mass = 0 to 1
     mass = mass === undefined ? 1 : mass;
-    let particleNum = 36 + Math.round(50 * mass);
+    let particleNum = 36 + Math.round(64 * mass);
     // let maxSpeed = 0.5 + mass * 0.5;
     let maxSpeed = 0.3 + mass * 0.3;
 
     for (let i = 0; i < particleNum; i++) {
         let speed = 0.01 + Math.random() * (maxSpeed - 0.01);
         let deg = Math.random() * 360;
-        let radius = 0.6 - (speed / maxSpeed) * 0.4;
-        let lifespan = 500 + 500 * (speed / maxSpeed);
-        let color = endColor;
-        if (speed < maxSpeed * 0.2) {
-            color = startColor;
-        } else if (speed < maxSpeed * 0.5) {
-            color = midColor;
+        let radius = 0.7 - (speed / maxSpeed) * 0.65;
+        radius = radius * 0.8 + radius * 0.2 * mass;
+        let lifespan = 450 + 100 * Math.random() + 500 * (speed / maxSpeed);
+        // let color = endColor;
+        // if (speed < maxSpeed * 0.2) {
+        //     color = startColor;
+        // } else if (speed < maxSpeed * 0.5) {
+        //     color = midColor;
+        // }
+        const speedPct = speed / maxSpeed;
+        let mixAmount; // = speedPct * 100;
+        let color; // = mixHexColors(startColor, endColor, mixAmount);
+        const breakpoint1 = 0.1;
+        const breakpoint2 = 0.5;
+        if (speedPct < breakpoint1) {
+            mixAmount = (100 * speedPct) / breakpoint1;
+            color = mixHexColors("#ffffff", yellow, mixAmount);
+        } else if (speedPct < breakpoint2) {
+            mixAmount =
+                (100 * (speedPct - breakpoint1)) / (breakpoint2 - breakpoint1);
+            color = mixHexColors(yellow, red, mixAmount);
+        } else {
+            mixAmount = (100 * (speedPct - breakpoint2)) / (1 - breakpoint2);
+            // mixAmount = Math.max(0, Math.min(100, mixAmount));
+            color = mixHexColors(red, "#3a00ef", mixAmount);
         }
         // x, y, radius, mass, facing, velocity, color
-        let particle = new Circle(
-            x,
-            y,
-            radius,
-            mass,
-            deg,
-            speed,
-            color
-        );
-        particle.vx += gO.vx * 0.5;
-        particle.vy += gO.vy * 0.5;
+        let particle = new Circle(x, y, radius, mass, deg, speed, color);
+        particle.vx += gO.vx * 0.5 * speedPct * speedPct;
+        particle.vy += gO.vy * 0.5 * speedPct * speedPct;
         particle.lifeSpan = lifespan;
         particle.bornTime = performance.now();
         particle.deceleration = 0.95;
