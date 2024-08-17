@@ -45,9 +45,11 @@ const generateAsteroids = (numAsteroids) => {
     while (loops < amount) {
         // x, y, radius, mass, facing, velocity, color)
         const maxR = 4;
-        let factor = 1; //+ Math.round(Math.random() * (maxR - 1));
-        let r = maxR / factor;
-        let mass = 2 / (factor * factor);
+        // let factor = 1; //+ Math.round(Math.random() * (maxR - 1));
+        // let r = maxR / factor;
+        let r = maxR;
+        // let mass = 2 / (factor * factor);
+        let mass = r*r/8;
         let velocity = 1 / (2 * r);
         let newCircle = new Circle(
             r + Math.random() * (100 - r * 2),
@@ -64,9 +66,10 @@ const generateAsteroids = (numAsteroids) => {
             checkAsteroidOverlapsRect(newCircle)
         ) {
             newCircle = null;
-            if (factor < maxR) factor += 1;
-            r = maxR / factor;
-            mass = 2 / (factor * factor);
+            // if (factor < maxR) factor += 1;
+            // r = maxR / factor;
+            if (r > 2) r--;
+            mass = r*r/8;
             velocity = 1 / (2 * r);
             newCircle = new Circle(
                 r + Math.random() * (100 - r * 2),

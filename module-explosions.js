@@ -34,7 +34,15 @@ const detonateShockwave = (x, y, r) => {
 
 const explode = (gO) => {
     // play sound
-    emitSound("explodeSound");
+    if (gO.radius > 3) {
+        // emitSound("explodeBoom");
+        emitSound("explode8bit");
+    } else if (gO.radius > 2) {
+        emitSound("explodeMid");
+    } else {
+        emitSound("explodeSound");
+    }
+
     // gO is gameObject
     const x = gO.x;
     const y = gO.y;

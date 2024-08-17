@@ -14,7 +14,7 @@ const handlePoints = (missile, target) => {
             missilePlayer.score += 5;
             break;
         case "asteroid":
-            missilePlayer.score++;
+            missilePlayer.score+= 5-target.radius;
             // console.log(missilePlayer.name + " - " + missilePlayer.score);
             break;
     }
@@ -22,13 +22,35 @@ const handlePoints = (missile, target) => {
 
 // ===============================
 
+function sortByLeft(circles) {
+    circles.sort((a, b) => {
+        /* 
+        !! This doesn't work with motion, only with static current position
+        Instead, we would have to find leftmost and rightmost position for each circle in current frame's movement.
+        Count those as circle's bounds
+        */
+        const aL = Math.min(a.x, a.x + a.vx) - a.radius;
+        const bL = Math.min(b.x, b.x + b.vx) - b.radius;
+        return aL - bL;
+    });
+}
+function checkNoXmotionOverlap(a, b) {
+    // is b's leftmost position this move > than a's rightmost position?
+    const bL = Math.min(b.x, b.x + b.vx) - b.radius;
+    const aR = Math.max(a.x, a.x + a.vx) + a.radius;
+    return bL > aR;
+}
+
 function checkHit(circles) {
+    sortByLeft(circles)
     // All circles vs all circles
     const exploders = [];
     for (let i = 0; i < circles.length; i++) {
         const A = circles[i];
         for (var j = i + 1; j < circles.length; j++) {
             const B = circles[j];
+            // prune list of circles
+            if (checkNoXmotionOverlap(A, B)) break;
             // this needs to become more generic.  checking whether a circle is a missile shouldn't happen here
             if (A.type !== "missile" && B.type !== "missile") {
                 stopOverlap(A, B);
