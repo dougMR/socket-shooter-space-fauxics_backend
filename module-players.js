@@ -42,6 +42,7 @@ const reassignStartingPositions = () => {
         ship.y = 50 + getSin(positionDeg) * 45;
     }
 };
+
 const addPlayer = (name, socketId, uuid) => {
     // All players will be Client once Server is implemented
     console.log("addPlayer()", name);
@@ -96,7 +97,6 @@ const addPlayer = (name, socketId, uuid) => {
     console.log("name already in use.");
     return { error: "Please choose another name." };
 };
-
 
 const reconnectPlayerByUUID = (uuid, socketId) => {
     console.log("reconnectPlayerByUUID()");

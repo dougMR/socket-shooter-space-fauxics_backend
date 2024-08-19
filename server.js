@@ -84,6 +84,9 @@ const startGame = () => {
     generateObstacles();
     generateAsteroids(50);
     io.emit("startGame");
+    for(const ship of ships){
+        ship.alive = true;
+    }
     startGameLoop();
 };
 

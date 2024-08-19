@@ -9,7 +9,12 @@ class Ship extends Circle {
         //   meanwhile, keep an array of ship images on front end, and store its index here
         this._imageIndex = null;
         this._deceleration = 0.98;
+        this._alive = true;
         this._type = "ship";
+    }
+    destroy() {
+        super.destroy();
+        this.alive = false;
     }
     /*    draw() {
         // super.draw();
@@ -63,6 +68,14 @@ class Ship extends Circle {
         ctx.translate(-x, -y);
     }
         */
+
+    get alive() {
+        return this._alive;
+    }
+    set alive(value) {
+        this._alive = value;
+    }
+
     get imageIndex() {
         return this._imageIndex;
     }
@@ -93,6 +106,7 @@ class Ship extends Circle {
             image: this._image,
             color: this._color,
             thrusting: this._thrusting,
+            alive: this._alive
         };
         return shipObject;
     }

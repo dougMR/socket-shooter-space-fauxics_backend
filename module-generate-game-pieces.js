@@ -10,7 +10,8 @@ import { getCos, getSin } from "./module-angles.js";
 /////////////////////////
 
 const createObstacle = (x, y, w, h, rot) => {
-    const newRect = new Rectangle(x, y, w, h, "#5577cc");
+    const obstacleColor = "#3E2B68"; // "#5577cc"
+    const newRect = new Rectangle(x, y, w, h, obstacleColor);
     newRect.rotation = rot;
     obstacles.push(newRect);
 };

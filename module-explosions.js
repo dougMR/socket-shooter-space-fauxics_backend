@@ -57,9 +57,10 @@ const explode = (gO) => {
     let mass = gO.mass;
     // mass = 0 to 1
     mass = mass === undefined ? 1 : mass;
-    let particleNum = 36 + Math.round(64 * mass);
+    let particleNum = 36 + Math.round(36 * mass);
+    let maxSpeed = 0.8 + mass * 0.5;
     // let maxSpeed = 0.5 + mass * 0.5;
-    let maxSpeed = 0.3 + mass * 0.3;
+    // let maxSpeed = 0.3 + mass * 0.3;
 
     for (let i = 0; i < particleNum; i++) {
         let speed = 0.01 + Math.random() * (maxSpeed - 0.01);
@@ -88,7 +89,8 @@ const explode = (gO) => {
         } else {
             mixAmount = (100 * (speedPct - breakpoint2)) / (1 - breakpoint2);
             // mixAmount = Math.max(0, Math.min(100, mixAmount));
-            color = mixHexColors(red, "#3a00ef", mixAmount);
+            const outerColor ="#800000";// "#3a00ef";
+            color = mixHexColors(red, outerColor, mixAmount);
         }
         // x, y, radius, mass, facing, velocity, color
         let particle = new Circle(x, y, radius, mass, deg, speed, color);
@@ -96,7 +98,7 @@ const explode = (gO) => {
         particle.vy += gO.vy * 0.5 * speedPct * speedPct;
         particle.lifeSpan = lifespan;
         particle.bornTime = performance.now();
-        particle.deceleration = 0.95;
+        particle.deceleration = 0.93;//0.95;
         particle.myArray = debris;
         particle.type = "debris";
         debris.push(particle);

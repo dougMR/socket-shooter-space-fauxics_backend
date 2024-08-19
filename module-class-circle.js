@@ -151,7 +151,7 @@ class Circle {
         ctx.rotate(-degreesToRadians(this._facing));
         ctx.translate(-x, -y);
     }
-*/
+    */
     get x() {
         return this._x;
     }
