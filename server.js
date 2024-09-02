@@ -292,7 +292,7 @@ io.on("connection", (socket) => {
             const missile = new Missile(
                 noseX,
                 noseY,
-                0.5,
+                0.25,
                 0.1,
                 ship.facing,
                 ship.velocity + 2,

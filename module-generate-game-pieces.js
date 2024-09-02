@@ -10,7 +10,7 @@ import { getCos, getSin } from "./module-angles.js";
 /////////////////////////
 
 const createObstacle = (x, y, w, h, rot) => {
-    const obstacleColor = "#3E2B68"; // "#5577cc"
+    const obstacleColor = "#293d61";// "#3E2B68"; // "#5577cc"
     const newRect = new Rectangle(x, y, w, h, obstacleColor);
     newRect.rotation = rot;
     obstacles.push(newRect);
@@ -50,7 +50,8 @@ const generateAsteroids = (numAsteroids) => {
         // let r = maxR / factor;
         let r = maxR;
         // let mass = 2 / (factor * factor);
-        let mass = r*r/8;
+        let mass = r*r/2;
+        
         let velocity = 1 / (2 * r);
         let newCircle = new Circle(
             r + Math.random() * (100 - r * 2),
@@ -70,7 +71,7 @@ const generateAsteroids = (numAsteroids) => {
             // if (factor < maxR) factor += 1;
             // r = maxR / factor;
             if (r > 2) r--;
-            mass = r*r/8;
+            mass = r*r/2;
             velocity = 1 / (2 * r);
             newCircle = new Circle(
                 r + Math.random() * (100 - r * 2),
@@ -82,6 +83,7 @@ const generateAsteroids = (numAsteroids) => {
                 "gradient"
             );
         }
+        console.log("Asteroid mass:",mass);
         newCircle.type = "asteroid";
         newCircle.moveAngle = Math.random() * 360;
         // const asteroidImage = new Image(); // Create new img element

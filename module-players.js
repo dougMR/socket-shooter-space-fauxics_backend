@@ -58,7 +58,7 @@ const addPlayer = (name, socketId, uuid) => {
             (player) => player.name?.toLowerCase() === name?.toLowerCase()
         )
     ) {
-        let ship = new Ship(50, 95, 1.5, 2, 270, 0, shipColors[players.length]);
+        let ship = new Ship(50, 95, 1, 2, 270, 0, shipColors[players.length]);
         ship.myArray = ships;
         // ship.type = "ship";
         ships.push(ship);

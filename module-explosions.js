@@ -58,7 +58,7 @@ const explode = (gO) => {
     // mass = 0 to 1
     mass = mass === undefined ? 1 : mass;
     let particleNum = 36 + Math.round(36 * mass);
-    let maxSpeed = 0.8 + mass * 0.5;
+    let maxSpeed = 0.8 + mass * 0.3;
     // let maxSpeed = 0.5 + mass * 0.5;
     // let maxSpeed = 0.3 + mass * 0.3;
 
@@ -66,8 +66,8 @@ const explode = (gO) => {
         let speed = 0.01 + Math.random() * (maxSpeed - 0.01);
         let deg = Math.random() * 360;
         let radius = 0.7 - (speed / maxSpeed) * 0.65;
-        radius = radius * 0.8 + radius * 0.2 * mass;
-        let lifespan = 450 + 100 * Math.random() + 500 * (speed / maxSpeed);
+        radius = radius * 0.95 + radius * 0.01 * mass;
+        let lifespan = 350 + 100 * Math.random() + 600 * (speed / maxSpeed);
         // let color = endColor;
         // if (speed < maxSpeed * 0.2) {
         //     color = startColor;
