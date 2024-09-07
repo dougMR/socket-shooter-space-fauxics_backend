@@ -188,6 +188,9 @@ class Circle {
     set moveAngle(value) {
         this._moveAngle = (value + 360) % 360;
     }
+    get radians() {
+        return degreesToRadians(this._moveAngle)
+    }
     get velocity() {
         return this._velocity;
     }
@@ -241,6 +244,7 @@ class Circle {
             y: this._y,
             radius: this._radius,
             facing: this._facing,
+            radians: this.radians,
             image: this._image,
             color: this._color,
             type: this._type

@@ -1,6 +1,7 @@
 import { asteroids, ships, debris, emitSound } from "./server.js";
 import { mixHexColors } from "./libs/colorUtilities.js";
 import { Circle } from "./module-class-circle.js";
+import { getInitialVelocityFromDistanceAndDeceleration } from "./temp-brute-deceleration.js";
 
 // Explosions
 //
@@ -33,6 +34,7 @@ const detonateShockwave = (x, y, r) => {
 };
 
 const explode = (gO) => {
+    // if(gO.type === "missile")return;
     // play sound
     if (gO.radius > 3) {
         // emitSound("explodeBoom");
@@ -52,16 +54,26 @@ const explode = (gO) => {
     detonateShockwave(x, y, swRadius);
     // Debris
     let yellow = "#ffff00"; //"#ff0000";//
-    let red = "#ff0000"; //"#ffff00"; //
+    let red = "#ff3300"; //"#ffff00"; //
+    const outerColor = "#ff0000"; //"#806010"; // "#3a00ef";
     // let midColor = mixHexColors(startColor, endColor, 50);
     let mass = gO.mass;
     // mass = 0 to 1
     mass = mass === undefined ? 1 : mass;
-    let particleNum = 36 + Math.round(36 * mass);
-    let maxSpeed = 0.8 + mass * 0.3;
+    let particleNum = 36 + Math.round(10 * mass);;
+    // if (gO.type !== "missile") particleNum += Math.round(10 * mass);
+    const decelerationPercent = 0.95;
+    const maxDistance = Math.max(2, gO.radius * 3);
+    // let maxSpeed = 0.8 + mass * 0.3;
+    let maxSpeed = getInitialVelocityFromDistanceAndDeceleration(
+        maxDistance,
+        decelerationPercent
+    );
+    console.log("maxDistance: ", maxDistance);
+    console.log("maxSpeed: ", maxSpeed);
     // let maxSpeed = 0.5 + mass * 0.5;
     // let maxSpeed = 0.3 + mass * 0.3;
-
+    const blastParticles = [];
     for (let i = 0; i < particleNum; i++) {
         let speed = 0.01 + Math.random() * (maxSpeed - 0.01);
         let deg = Math.random() * 360;
@@ -89,7 +101,6 @@ const explode = (gO) => {
         } else {
             mixAmount = (100 * (speedPct - breakpoint2)) / (1 - breakpoint2);
             // mixAmount = Math.max(0, Math.min(100, mixAmount));
-            const outerColor ="#800000";// "#3a00ef";
             color = mixHexColors(red, outerColor, mixAmount);
         }
         // x, y, radius, mass, facing, velocity, color
@@ -98,11 +109,16 @@ const explode = (gO) => {
         particle.vy += gO.vy * 0.5 * speedPct * speedPct;
         particle.lifeSpan = lifespan;
         particle.bornTime = performance.now();
-        particle.deceleration = 0.93;//0.95;
+        particle.deceleration = decelerationPercent; //0.93;//0.95;
         particle.myArray = debris;
         particle.type = "debris";
-        debris.push(particle);
+        // debris.push(particle);
+        blastParticles.push(particle);
     }
+    blastParticles.sort((a, b) => {
+        a.velocity < b.velocity;
+    });
+    debris.push(...blastParticles);
 };
 
 export { explode };

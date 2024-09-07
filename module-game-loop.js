@@ -150,7 +150,7 @@ function gameLoop() {
     if (secondsLeft !== prevSecondsLeft) {
         prevSecondsLeft = secondsLeft;
         emitTime(Math.floor(secondsLeft));
-        console.log("secondsLeft (main loop):",secondsLeft);
+        // console.log("secondsLeft (main loop):",secondsLeft);
     }
     emitGameState();
     if (secondsLeft > 0 && !timedOut) {

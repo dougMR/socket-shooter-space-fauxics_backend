@@ -11,7 +11,7 @@ class Missile extends Circle {
 
     move(distance) {
         super.move();
-        this._xyHistory.unshift({ x: this._x, y: this._y });
+        this._xyHistory.unshift({ x: this._x, y: this._y, radians: this.radians });
         if (this._xyHistory.length > 20) this._xyHistory.length = 20;
     }
 
@@ -57,11 +57,13 @@ class Missile extends Circle {
     // }
 
     get clientVersion() {
+
         const missileObject = {
             x: this._x,
             y: this._y,
             radius: this._radius,
             facing: this._facing,
+            radians: this.radians,
             image: this._image,
             color: this._color,
             xyHistory: this._xyHistory
