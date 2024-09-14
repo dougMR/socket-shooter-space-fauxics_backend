@@ -8,7 +8,7 @@ import { getInitialVelocityFromDistanceAndDeceleration } from "./temp-brute-dece
 ////////////////
 
 const detonateShockwave = (x, y, r) => {
-    const gosToCheck = [...asteroids, ...ships, ...debris];
+    const gosToCheck = [...asteroids, ...ships]; //, ...debris];
     // get GOs in radius
     const affectedGos = gosToCheck.filter(
         (go) => Math.pow(go.x - x, 2) + Math.pow(go.y - y, 2) < r * r
@@ -33,59 +33,42 @@ const detonateShockwave = (x, y, r) => {
     }
 };
 
-const explode = (gO) => {
-    // if(gO.type === "missile")return;
-    // play sound
-    if (gO.radius > 3) {
-        // emitSound("explodeBoom");
-        emitSound("explode8bit");
-    } else if (gO.radius > 2) {
-        emitSound("explodeMid");
-    } else {
-        emitSound("explodeSound");
-    }
+const explosion = (gO, radius, outerColor, deceleration) => {
+    radius = radius || gO.radius;
 
     // gO is gameObject
     const x = gO.x;
     const y = gO.y;
 
     // Shockwave
-    const swRadius = 4 + gO.radius * 4;
+    const swRadius = 4 + radius * 4;
     detonateShockwave(x, y, swRadius);
     // Debris
     let yellow = "#ffff00"; //"#ff0000";//
     let red = "#ff3300"; //"#ffff00"; //
-    const outerColor = "#ff0000"; //"#806010"; // "#3a00ef";
+    outerColor = outerColor || "#ff0000"; //"#806010"; // "#3a00ef";
     // let midColor = mixHexColors(startColor, endColor, 50);
     let mass = gO.mass;
     // mass = 0 to 1
     mass = mass === undefined ? 1 : mass;
-    let particleNum = 36 + Math.round(10 * mass);;
+    let particleNum = 24 + Math.round(24 * radius);
     // if (gO.type !== "missile") particleNum += Math.round(10 * mass);
-    const decelerationPercent = 0.95;
-    const maxDistance = Math.max(2, gO.radius * 3);
+    const decelerationPercent = deceleration || 0.9;
+    const maxDistance = Math.max(2, radius * 5);
     // let maxSpeed = 0.8 + mass * 0.3;
+
     let maxSpeed = getInitialVelocityFromDistanceAndDeceleration(
         maxDistance,
         decelerationPercent
     );
-    console.log("maxDistance: ", maxDistance);
-    console.log("maxSpeed: ", maxSpeed);
-    // let maxSpeed = 0.5 + mass * 0.5;
-    // let maxSpeed = 0.3 + mass * 0.3;
+
     const blastParticles = [];
     for (let i = 0; i < particleNum; i++) {
         let speed = 0.01 + Math.random() * (maxSpeed - 0.01);
         let deg = Math.random() * 360;
         let radius = 0.7 - (speed / maxSpeed) * 0.65;
         radius = radius * 0.95 + radius * 0.01 * mass;
-        let lifespan = 350 + 100 * Math.random() + 600 * (speed / maxSpeed);
-        // let color = endColor;
-        // if (speed < maxSpeed * 0.2) {
-        //     color = startColor;
-        // } else if (speed < maxSpeed * 0.5) {
-        //     color = midColor;
-        // }
+        let lifespan = 350 + 100 * Math.random() + 800 * (speed / maxSpeed);
         const speedPct = speed / maxSpeed;
         let mixAmount; // = speedPct * 100;
         let color; // = mixHexColors(startColor, endColor, mixAmount);
@@ -105,8 +88,8 @@ const explode = (gO) => {
         }
         // x, y, radius, mass, facing, velocity, color
         let particle = new Circle(x, y, radius, mass, deg, speed, color);
-        particle.vx += gO.vx * 0.5 * speedPct * speedPct;
-        particle.vy += gO.vy * 0.5 * speedPct * speedPct;
+        particle.vy += gO.vy * .1 * speedPct * speedPct;
+        particle.vx += gO.vx * .1 * speedPct * speedPct;
         particle.lifeSpan = lifespan;
         particle.bornTime = performance.now();
         particle.deceleration = decelerationPercent; //0.93;//0.95;
@@ -119,6 +102,21 @@ const explode = (gO) => {
         a.velocity < b.velocity;
     });
     debris.push(...blastParticles);
+};
+
+const explode = (gO) => {
+    explosion(gO, gO.radius * 0.8, "#ffff00", 0.94);
+            // play sound
+            if (gO.radius > 3) {
+                emitSound("explode8bit");
+            } else if (gO.radius > 2) {
+                emitSound("explodeMid");
+            } else {
+                emitSound("explodeSound");
+            }
+    setTimeout(() => {
+        explosion(gO);
+    }, 150);
 };
 
 export { explode };

@@ -14,7 +14,7 @@ import {
     checkHitObjects,
 } from "./module-collision.js";
 import { players } from "./module-players.js";
-
+import { degreesToRadians } from "./module-angles.js";
 import { stopCircleRectOverlap } from "./module-circle-rect-intersect.js";
 
 const keepInBounds = (obj) => {
@@ -48,11 +48,49 @@ const checkOutOfBounds = (obj) => {
     return false;
 };
 
+// obstacleRot and w based on obstacle creation in generate-game-pieces
+let obstacleRot = 90;
+const radius = 35;
+const w = 20;
+// const h = 6;
+const rotateObstacles = () => {
+    obstacleRot += 0.1;
+    // console.log("obstacleRot:",obstacleRot);
+
+    for (let o = 0; o < obstacles.length; o++) {
+        const angle = obstacleRot + (360 / obstacles.length) * o;
+        // const x = 50 + getCos(angle) * radius - getCos(angle + 90) * w * 0.5;
+        // const y = 50 + getSin(angle) * radius - getSin(angle + 90) * w * 0.5;
+        const x =
+            50 +
+            Math.cos(degreesToRadians(angle)) * radius -
+            Math.cos(degreesToRadians(angle + 90)) * w * 0.5;
+        const y =
+            50 +
+            Math.sin(degreesToRadians(angle)) * radius -
+            Math.sin(degreesToRadians(angle + 90)) * w * 0.5;
+        const rot = (angle + 90) % 360;
+        obstacles[o].x = x;
+        obstacles[o].y = y;
+        obstacles[o].rotation = rot;
+    }
+};
+
+// let lastTime;
+let fps = 0;
+let frames = 0;
+const getFps = () => {
+    return fps;
+};
 function gameLoop() {
     const timeStamp = performance.now();
     if (!startTime) {
         startTime = timeStamp;
+        // lastTime = timeStamp;
     }
+    // const elapsed = timeStamp - lastTime;
+    // console.log('elapsed: ',elapsed);
+    // lastTime = timeStamp;
     // oldTimeStamp = timeStamp;
 
     // Keys.checkKeys();
@@ -60,15 +98,18 @@ function gameLoop() {
     // clearCanvas();
 
     // draw obstacles
-    for (const o of obstacles) {
-        // o.draw();
-    }
+    // for (const o of obstacles) {
+    // o.draw();
+    // }
+
 
     // Check Collision
+    rotateObstacles();
     checkHitObjects();
     checkCirclesHitRectangles();
 
-    // draw asteroids
+
+    // move asteroids
     for (const a of asteroids) {
         const oldV = a.velocity;
         const isNum = !isNaN(a.x);
@@ -122,9 +163,10 @@ function gameLoop() {
         }
         // ship.draw();
     }
+
+
     const timePassed = (timeStamp - startTime) / 1000;
     let secondsLeft = Math.max(0, Math.floor(totalSeconds - timePassed));
-    
 
     if (ships.length === 1 && !timingOut && players.length > 1) {
         // Last player.  Give them 1 point for each remaining second, and end game.
@@ -137,8 +179,11 @@ function gameLoop() {
             if (ships.length > 0) {
                 players.find((p) => p.ship === ships[0]).score +=
                     Math.floor(secondsLeft);
-                    console.log("secondsLeft (to award to surviving player):",secondsLeft);
-                    // emitTime(Math.floor(secondsLeft));
+                console.log(
+                    "secondsLeft (to award to surviving player):",
+                    secondsLeft
+                );
+                // emitTime(Math.floor(secondsLeft));
             }
             timedOut = true;
         }, 1000);
@@ -146,11 +191,13 @@ function gameLoop() {
         // No players left.  End game.
         secondsLeft = 0;
     }
-
+    frames++;
     if (secondsLeft !== prevSecondsLeft) {
         prevSecondsLeft = secondsLeft;
         emitTime(Math.floor(secondsLeft));
         // console.log("secondsLeft (main loop):",secondsLeft);
+        fps = frames;
+        frames = 0;
     }
     emitGameState();
     if (secondsLeft > 0 && !timedOut) {
@@ -177,4 +224,4 @@ let prevSecondsLeft = 0;
 let timingOut = false;
 let timedOut = false;
 
-export { startGameLoop };
+export { startGameLoop, getFps };

@@ -202,6 +202,12 @@ class Rectangle {
         // console.log(this._rotation)
         this.setVertices();
     }
+    set x(value){
+        this._x = value;
+    }
+    set y(value){
+        this._y = value;
+    }
     get vertices() {
         return this._vertices;
     }

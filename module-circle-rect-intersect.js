@@ -15,10 +15,12 @@ const stopCircleRectOverlap = (circle, rect) => {
         let pct;
         if (getPointInRect(circle.x, circle.y, rect)) {
             // circle center inside rect
-            pct = (dist+0.1) / circle.radius + 1;
+            // pct = (dist+0.1) / circle.radius + 1;
+            pct = (dist+0.01) / circle.radius;
         } else {
             // circle center outside rect
-            pct = (dist / circle.radius) - 1.1;
+            // pct = (dist / circle.radius) - 1.1;
+            pct = (dist / circle.radius) - 1.01;
         }
         const outsideX = circle.x + (proj.x - circle.x) * pct;
         const outsideY = circle.y + (proj.y - circle.y) * pct;
@@ -96,6 +98,7 @@ const distSq = (x1, y1, x2, y2) => {
 };
 
 const getPointInRect = (px, py, rect) => {
+    // if point's distance from any side is larger than that dimension of rect, point is outside
     const vs = rect.vertices;
     const s1sq = distSq(vs[0].x, vs[0].y, vs[1].x, vs[1].y);
     const s2sq = distSq(vs[1].x, vs[1].y, vs[2].x, vs[2].y);

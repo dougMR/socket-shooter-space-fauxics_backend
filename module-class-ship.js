@@ -106,7 +106,8 @@ class Ship extends Circle {
             image: this._image,
             color: this._color,
             thrusting: this._thrusting,
-            alive: this._alive
+            alive: this._alive,
+            playerId: this.playerId
         };
         return shipObject;
     }

@@ -54,10 +54,16 @@ class Circle {
             this.velocity = Math.max(-0.5, Math.min(0.5, this.velocity));
         };
         this.decelerate = () => {
+       
             this.velocity *= this._deceleration;
             if(Math.abs(this._velocity)<0.01){
                 this.velocity = 0;
             }
+            
+            // this.velocity -= 0.0005;
+            // if(Math.abs(this._velocity)<0.001){
+            //     this.velocity = 0;
+            // }
         };
        
         this.set_velocity = (value) => {

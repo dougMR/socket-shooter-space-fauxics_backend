@@ -10,9 +10,11 @@ for (let deg = 0; deg < 360; deg++) {
     cosTable[deg] = cos;
 }
 const getCos = (degrees) => {
+    // return Math.cos(degreesToRadians(degrees))
     return cosTable[(Math.round(degrees) + 360) % 360];
 };
 const getSin = (degrees) => {
+    // return Math.sin(degreesToRadians(degrees))
     return sinTable[(Math.round(degrees) + 360) % 360];
 };
 export { getCos, getSin, radiansToDegrees, degreesToRadians };

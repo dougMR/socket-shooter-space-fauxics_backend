@@ -57,7 +57,7 @@ import {
     reassignStartingPositions,
 } from "./module-players.js";
 import { Missile } from "./module-class-missile.js";
-import { startGameLoop } from "./module-game-loop.js";
+import { startGameLoop, getFps } from "./module-game-loop.js";
 import { getCos, getSin } from "./module-angles.js";
 import {
     generateAsteroids,
@@ -84,7 +84,7 @@ const startGame = () => {
     generateObstacles();
     generateAsteroids(50);
     io.emit("startGame");
-    for(const ship of ships){
+    for (const ship of ships) {
         ship.alive = true;
     }
     startGameLoop();
@@ -119,6 +119,7 @@ const emitGameState = () => {
         obstacles: obstacles.map((o) => o.clientVersion),
         ships: ships.map((s) => s.clientVersion),
         players: players.map((p) => p.clientVersion),
+        fps: getFps(),
         // add players: when scoring is implemented
     };
     io.emit("updateGameData", gameData);

@@ -27,7 +27,7 @@ const checkHitObjects = () => {
                         (newR * newR) / 8,
                         // 3,1,
                         0,
-                        gO.velocity*.7,
+                        gO.velocity * 0.7,
                         "gradient"
                     );
                     newCircle.type = "asteroid";
@@ -40,7 +40,9 @@ const checkHitObjects = () => {
                 }
             }
         }
-        explode(gO);
+        if (gO.type !== "missile") {
+            explode(gO);
+        }
         // if (gO === ShipA) {
         //     ShipA = null;
         // } else

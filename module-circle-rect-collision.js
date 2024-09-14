@@ -35,6 +35,7 @@ const checkCircleCollideRect = (circle, rect) => {
     }
 
     let minDist = Infinity;
+    // intersect point
     let ip = null;
     // need these for bounce
     let circleOrSeg = "";
@@ -43,7 +44,7 @@ const checkCircleCollideRect = (circle, rect) => {
         // check hit sides
 
     for (const s of expandedSides) {
-        side++;
+        // side++;
         // ax1, ay1, ax2, ay2, bx1, by1, bx2, by2
         const intersectPoint = getVectorsIntersect(
             circle.x,

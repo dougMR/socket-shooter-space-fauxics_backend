@@ -83,7 +83,7 @@ const generateAsteroids = (numAsteroids) => {
                 "gradient"
             );
         }
-        console.log("Asteroid mass:",mass);
+        // console.log("Asteroid mass:",mass);
         newCircle.type = "asteroid";
         newCircle.moveAngle = Math.random() * 360;
         // const asteroidImage = new Image(); // Create new img element
