@@ -102,12 +102,10 @@ function gameLoop() {
     // o.draw();
     // }
 
-
     // Check Collision
     rotateObstacles();
     checkHitObjects();
     checkCirclesHitRectangles();
-
 
     // move asteroids
     for (const a of asteroids) {
@@ -120,7 +118,6 @@ function gameLoop() {
             // undo overlaps
             stopCircleRectOverlap(a, o);
         }
-        // a.draw();
     }
 
     // move debris
@@ -129,31 +126,23 @@ function gameLoop() {
         if (timeStamp - d.bornTime > d.lifeSpan || checkOutOfBounds(d)) {
             d.destroy();
         }
-
         d.move();
-
-        // check asteroid hit obstacles
-        // for (const o of obstacles) {
-        //     // undo overlaps
-        //     stopCircleRectOverlap(d, o);
-        // }
-        // d.draw();
     }
 
     // move missiles
     for (const m of missiles) {
         m.move();
-        // console.log("move missile: ", m.x, m.y, m.velocity);
-        // m.draw();
         // move this to the GameObject (Circle) class?
-        // console.log("move m: ",m);
+        for (const o of obstacles) {
+            // undo overlaps
+            stopCircleRectOverlap(m, o);
+        }
         if (timeStamp - m.bornTime > m.lifeSpan || checkOutOfBounds(m)) {
             m.destroy();
         }
     }
 
     // move / draw ships
-    // console.log("ships: ", ships);
     for (const ship of ships) {
         ship.move();
         keepInBounds(ship);
@@ -161,29 +150,22 @@ function gameLoop() {
             // undo overlaps
             stopCircleRectOverlap(ship, o);
         }
-        // ship.draw();
     }
 
+    
 
     const timePassed = (timeStamp - startTime) / 1000;
     let secondsLeft = Math.max(0, Math.floor(totalSeconds - timePassed));
 
     if (ships.length === 1 && !timingOut && players.length > 1) {
-        // Last player.  Give them 1 point for each remaining second, and end game.
+        // Last player.  Give them 1 points for each remaining second (times num players), and end game.
         timingOut = true;
-        console.log("One Alive!!");
         setTimeout(() => {
-            console.log("End the Game");
-            console.log("#ships:", ships.length);
-            console.log("#players:", players.length);
             if (ships.length > 0) {
-                players.find((p) => p.ship === ships[0]).score +=
-                    Math.floor(secondsLeft);
-                console.log(
-                    "secondsLeft (to award to surviving player):",
-                    secondsLeft
+                // award seconds left times num players
+                players.find((p) => p.ship === ships[0]).score += Math.floor(
+                    secondsLeft * players.length
                 );
-                // emitTime(Math.floor(secondsLeft));
             }
             timedOut = true;
         }, 1000);

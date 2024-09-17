@@ -40,16 +40,11 @@ const checkHitObjects = () => {
                 }
             }
         }
+        
         if (gO.type !== "missile") {
             explode(gO);
         }
-        // if (gO === ShipA) {
-        //     ShipA = null;
-        // } else
-        // if (gO.type === "asteroid") {
-        //     // with multiple players, figure out who shot the asteroid?
-        //     addScore(1);
-        // }
+
         gO.destroy();
     }
 };

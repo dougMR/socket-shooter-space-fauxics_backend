@@ -4,7 +4,10 @@ import { getCos, getSin } from "./module-angles.js";
 import { ships } from "./server.js";
 
 const maxPlayers = 8;
-const disconnectedPlayers = [];
+// ?? Is disconnectedPlayers being used any longer?
+// const disconnectedPlayers = [];
+// players waiting to join game
+const waitingPlayers = [];
 const players = [];
 const shipColors = [
     "red",
@@ -20,14 +23,25 @@ const shipColors = [
 const resetPlayers = () => {
     // resest existing players for new game
     ships.length = 0;
-    for(const p of players){
+    for (const p of players) {
         p.score = 0;
-        ships.push(p.ship);
+        if (p.connected) {
+            p.ship.alive = true;
+            if (!ships.find((s) => s.playerId === p.id)) ships.push(p.ship);
+        } else {
+            // if(p.ship){
+            const shipIndex = ships.findIndex((s) => s.playerId === p.id);
+            if (shipIndex > -1) {
+                ships.splice(shipIndex, 1);
+            }
+            // }
+        }
+
         p.ready = false;
         p.allHere = false;
     }
     reassignStartingPositions();
-}
+};
 
 const reassignStartingPositions = () => {
     // put players in circle at edge of playing field, facing towards center
@@ -44,14 +58,19 @@ const reassignStartingPositions = () => {
 };
 
 const addPlayer = (name, socketId, uuid) => {
-    // All players will be Client once Server is implemented
     console.log("addPlayer()", name);
-    console.log("new player uuid:", uuid);
+    // console.log("new player uuid:", uuid);
+
     if (players.length >= maxPlayers) {
         return { error: "Maximum players reached.  Can't add more." };
     }
-    console.log("players.length:",players.length);
-    console.log('players: ',players.map(p=>p.name));
+
+    // console.log("players.length:", players.length);
+    // console.log(
+    //     "players: ",
+    //     players.map((p) => p.name)
+    // );
+
     if (
         name &&
         !players.some(
@@ -60,13 +79,7 @@ const addPlayer = (name, socketId, uuid) => {
     ) {
         let ship = new Ship(50, 95, 1, 2, 270, 0, shipColors[players.length]);
         ship.myArray = ships;
-        // ship.type = "ship";
         ships.push(ship);
-        // const shipImage = new Image(); // Create new img element
-        // shipImage.src = "./images/spaceship.png"; // Set source path
-        // ShipA.image = shipImage;
-        // ^ Can't have images on the back end?  Add ship image on frontend?
-        //  maybe an array of ship images on front end and backend stores an index reference?
 
         // Name is available
         const newPlayer = {
@@ -77,6 +90,24 @@ const addPlayer = (name, socketId, uuid) => {
             ship,
             ready: false,
             allHere: false,
+            connected: true,
+            removalTimer: null,
+            startRemovalTimer() {
+                // remove from players in 2 mins
+                console.log(this.name, "startRemovalTimer()");
+                this.connected = false;
+                this.removalTimer = setTimeout(() => {
+                    console.log("removing", this.name);
+                    console.log("players0", players.length);
+                    removePlayer(this.uuid);
+                    console.log("players1", players.length);
+                }, 120000);
+            },
+            stopRemovalTimer() {
+                console.log(this.name, "stopRemovalTimer()");
+                clearTimeout(this.removalTimer);
+                this.connected = true;
+            },
             get clientVersion() {
                 return {
                     id: this.id,
@@ -91,36 +122,51 @@ const addPlayer = (name, socketId, uuid) => {
         newPlayer.ship.playerId = socketId;
         // reassign all seats
         reassignStartingPositions(players);
-        console.log("newPlayer:", newPlayer);
+        console.log("newPlayer:", newPlayer.name);
+        console.log("players#:", players.length);
         return { success: `${newPlayer.name} added to game.` };
     }
     console.log("name already in use.");
     return { error: "Please choose another name." };
 };
 
+const removePlayer = (uuid) => {
+    const playerIndex = players.findIndex((p) => (p.uuid = uuid));
+    if (playerIndex > -1) players.splice(playerIndex, 1);
+};
+
 const reconnectPlayerByUUID = (uuid, socketId) => {
     console.log("reconnectPlayerByUUID()");
-    console.log("disconnectedPlayers.length:", disconnectedPlayers.length);
-    let foundPlayer = disconnectedPlayers.find((p) => p.uuid === uuid);
-    if (foundPlayer === undefined) {
-        // check in connected players
-        foundPlayer = players.find((p) => p.uuid === uuid);
-    } else {
-        // found player in disconnectedPlayers, take them out
-        disconnectedPlayers.splice(disconnectIndex, 1);
-    }
-    console.log("foundPlayer:", foundPlayer);
+    // let foundPlayer = disconnectedPlayers.find((p) => p.uuid === uuid);
+    // if (foundPlayer === undefined) {
+
+    // check in connected players
+    let foundPlayer = players.find((p) => p.uuid === uuid);
+    // } else {
+    //     // found player in disconnectedPlayers, take them out
+    //     disconnectedPlayers.splice(disconnectIndex, 1);
+    // }
+
     if (foundPlayer === undefined) {
         // player not found
+        console.log("player not found");
         return false;
     } else {
         // player found
+        console.log("found player.", foundPlayer.name);
         foundPlayer.id = foundPlayer.ship.playerId = socketId;
-        clearTimeout(foundPlayer.disconnectTimer);
+        foundPlayer.stopRemovalTimer();
         // if we found them in disconnectedPlayers, put them in players
-        if (!players.includes(foundPlayer)) players.push(foundPlayer);
+        // if (!players.includes(foundPlayer)) players.push(foundPlayer); // <- can't use .includes to find an object
         return true;
     }
 };
 
-export { addPlayer, reconnectPlayerByUUID, players, disconnectedPlayers, resetPlayers, reassignStartingPositions };
+export {
+    addPlayer,
+    reconnectPlayerByUUID,
+    players,
+    // disconnectedPlayers,
+    resetPlayers,
+    reassignStartingPositions,
+};

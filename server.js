@@ -50,7 +50,7 @@ const io = new Server(server, {
 
 import {
     players,
-    disconnectedPlayers,
+    // disconnectedPlayers,
     reconnectPlayerByUUID,
     addPlayer,
     resetPlayers,
@@ -150,31 +150,33 @@ const disconnectAllNonPlayerSockets = () => {
     // limit each client to one socket, the one used by their player object
     console.log("sockets:", io.sockets.sockets.size);
     io.sockets.sockets.forEach((s) => {
-        console.log("checking", s.id);
+        console.log("checking", s.id,'...');
         const inPlayers = players.some((p) => p.id === s.id);
-        const inDisconnectedPlayers = disconnectedPlayers.some(
-            (p) => p.id === s.id
-        );
-        if (!inPlayers && !inDisconnectedPlayers) {
+        // const inDisconnectedPlayers = disconnectedPlayers.some(
+        //     (p) => p.id === s.id
+        // );
+        // if (!inPlayers && !inDisconnectedPlayers) {
+        if (!inPlayers) {
             // remove this socket
             console.log("disconnect socket:", s.id);
             s.disconnect();
         } else {
             if (inPlayers) {
                 console.log("is ", players.find((p) => p.id === s.id).name);
-            } else if (inDisconnectedPlayers) {
-                console.log(
-                    "is ",
-                    disconnectedPlayers.find((p) => p.id === s.id).name
-                );
-            }
+            } 
+            // else if (inDisconnectedPlayers) {
+            //     console.log(
+            //         "is ",
+            //         disconnectedPlayers.find((p) => p.id === s.id).name
+            //     );
+            // }
         }
     });
-    console.log("updated sockets:", io.sockets.sockets.size);
+    console.log("updated num sockets:", io.sockets.sockets.size);
 };
 
 io.on("connection", (socket) => {
-    // console.log("socket connected: ", socket);
+    console.log("socket connected: ", socket.id);
     socket.on("join_game", (playerName, uuid, callback) => {
         // Manual join
         console.log("--");
@@ -210,7 +212,7 @@ io.on("connection", (socket) => {
                 success,
                 name: players.find((p) => p.id === socket.id)?.name,
             });
-            if (success) emitPlayers();
+            if (success) {emitPlayers()};
         }
         disconnectAllNonPlayerSockets();
     });
@@ -370,6 +372,11 @@ io.on("connection", (socket) => {
     });
 */
     socket.on("disconnect", () => {
+        const disconnectedPlayer = players.find(p=>p.id === socket.id);
+        console.log('disconnected',socket.id,',',disconnectedPlayer?.name);
+        console.log('players#:',players.length);
+        disconnectedPlayer?.startRemovalTimer();
+
         // const user = removeUser(socket.id);
         // if (user) {
         //     io.to(user.room).emit("message", {

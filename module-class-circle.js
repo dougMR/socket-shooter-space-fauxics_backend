@@ -28,7 +28,7 @@ class Circle {
         this._mass = mass;
         this._moveAngle = this._facing = facing;
         this._velocity = velocity;
-        
+
         this._color = color;
         this._image = null;
         this._type = "none";
@@ -54,18 +54,17 @@ class Circle {
             this.velocity = Math.max(-0.5, Math.min(0.5, this.velocity));
         };
         this.decelerate = () => {
-       
             this.velocity *= this._deceleration;
-            if(Math.abs(this._velocity)<0.01){
+            if (Math.abs(this._velocity) < 0.01) {
                 this.velocity = 0;
             }
-            
+
             // this.velocity -= 0.0005;
             // if(Math.abs(this._velocity)<0.001){
             //     this.velocity = 0;
             // }
         };
-       
+
         this.set_velocity = (value) => {
             this._velocity = value;
             this._vx = this._velocity * getCos(this._moveAngle);
@@ -91,27 +90,29 @@ class Circle {
                 Math.pow(this._vx, 2) + Math.pow(this._vy, 2)
             );
         };
-        this.destroy = () => {
-            if (this._myArray) {
-                this._myArray.splice(this._myArray.indexOf(this), 1);
-            }
-
-            if (this._image) {
-                delete this._image;
-                this._image = null;
-            }
-            delete this;
-        };
         this._vx = this.get_vx();
         this._vy = this.get_vy();
     }
 
-    move (distance) {
+    destroy() {
+
+        if (this._myArray) {
+            this._myArray.splice(this._myArray.indexOf(this), 1);
+        }
+
+        if (this._image) {
+            delete this._image;
+            this._image = null;
+        }
+        delete this;
+    }
+
+    move(distance) {
         if (distance) this.velocity = distance;
         this.x += this.vx;
         this.y += this.vy;
-        if(this._deceleration < 1) this.decelerate();
-    };
+        if (this._deceleration < 1) this.decelerate();
+    }
 
     /*
     draw() {
@@ -195,7 +196,7 @@ class Circle {
         this._moveAngle = (value + 360) % 360;
     }
     get radians() {
-        return degreesToRadians(this._moveAngle)
+        return degreesToRadians(this._moveAngle);
     }
     get velocity() {
         return this._velocity;
@@ -240,7 +241,7 @@ class Circle {
     set myArray(value) {
         this._myArray = value;
     }
-    set deceleration(value){
+    set deceleration(value) {
         this._deceleration = value;
     }
 
@@ -253,7 +254,7 @@ class Circle {
             radians: this.radians,
             image: this._image,
             color: this._color,
-            type: this._type
+            type: this._type,
         };
         return circleObject;
     }

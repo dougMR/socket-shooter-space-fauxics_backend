@@ -1,5 +1,6 @@
 import { Circle } from "./module-class-circle.js";
 import { degreesToRadians } from "./module-angles.js";
+import { players } from "./module-players.js";
 
 class Ship extends Circle {
     constructor(x, y, radius, mass, facing, velocity, color, myArray) {
@@ -13,8 +14,9 @@ class Ship extends Circle {
         this._type = "ship";
     }
     destroy() {
-        super.destroy();
+        const p = players.find((p) => p.ship === this);
         this.alive = false;
+        super.destroy();
     }
     /*    draw() {
         // super.draw();
@@ -107,7 +109,7 @@ class Ship extends Circle {
             color: this._color,
             thrusting: this._thrusting,
             alive: this._alive,
-            playerId: this.playerId
+            playerId: this.playerId,
         };
         return shipObject;
     }
