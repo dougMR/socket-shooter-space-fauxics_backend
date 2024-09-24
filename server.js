@@ -50,11 +50,14 @@ const io = new Server(server, {
 
 import {
     players,
+    waitingPlayers,
     // disconnectedPlayers,
     reconnectPlayerByUUID,
-    addPlayer,
+    createPlayer,
     resetPlayers,
     reassignStartingPositions,
+    findPlayerById,
+    findPlayerByUuid,
 } from "./module-players.js";
 import { Missile } from "./module-class-missile.js";
 import { startGameLoop, getFps } from "./module-game-loop.js";
@@ -72,7 +75,12 @@ import {
 const emitPlayers = () => {
     console.log("emitPlayers()");
     const frontendPlayers = players.map((p) => p.clientVersion);
-    io.emit("updatePlayers", frontendPlayers);
+    const frontendWaitingPlayers = waitingPlayers.map((p) => p.clientVersion);
+
+    io.emit("updatePlayers", {
+        players: frontendPlayers,
+        waitingPlayers: frontendWaitingPlayers,
+    });
 };
 
 const startGame = () => {
@@ -81,6 +89,7 @@ const startGame = () => {
     asteroids.length = 0;
     obstacles.length = 0;
     resetPlayers();
+    console.log("done resetPlayers()");
     generateObstacles();
     generateAsteroids(50);
     io.emit("startGame");
@@ -150,7 +159,7 @@ const disconnectAllNonPlayerSockets = () => {
     // limit each client to one socket, the one used by their player object
     console.log("sockets:", io.sockets.sockets.size);
     io.sockets.sockets.forEach((s) => {
-        console.log("checking", s.id,'...');
+        console.log("checking", s.id, "...");
         const inPlayers = players.some((p) => p.id === s.id);
         // const inDisconnectedPlayers = disconnectedPlayers.some(
         //     (p) => p.id === s.id
@@ -163,7 +172,7 @@ const disconnectAllNonPlayerSockets = () => {
         } else {
             if (inPlayers) {
                 console.log("is ", players.find((p) => p.id === s.id).name);
-            } 
+            }
             // else if (inDisconnectedPlayers) {
             //     console.log(
             //         "is ",
@@ -183,7 +192,7 @@ io.on("connection", (socket) => {
         console.log("socket: ", socket.id);
         console.log(" --> incoming -> join_game", playerName);
         console.log("join_game uuid:", uuid);
-        const result = addPlayer(playerName, socket.id, uuid);
+        const result = createPlayer(playerName, socket.id, uuid);
         console.log("result: ", result);
         if (result?.success) {
             emitPlayers();
@@ -193,7 +202,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on("rejoin_game", (uuid, clientCallback) => {
-        console.log("rejoin_game()");
+        console.log("- rejoin_game()");
         console.log("uuid:", uuid);
         console.log("clientCallback:", clientCallback);
         // tells client how long to store connection data
@@ -210,43 +219,41 @@ io.on("connection", (socket) => {
             console.log("rejoin success:", success);
             clientCallback({
                 success,
-                name: players.find((p) => p.id === socket.id)?.name,
+                // name: players.find((p) => p.id === socket.id)?.name,
+                name: findPlayerByUuid(uuid)?.name,
             });
-            if (success) {emitPlayers()};
+            if (success) {
+                emitPlayers();
+            }
         }
         disconnectAllNonPlayerSockets();
     });
 
     socket.on("player_ready", (yesOrNo) => {
-        console.log("player_ready", yesOrNo);
+        console.log("- player_ready", yesOrNo);
         // If all connected players are ready, start game
         const socketPlayer = players.find((p) => p.id === socket.id);
         if (!socketPlayer) return;
         socketPlayer.ready = true;
-        if (checkAllPlayersReady()) {
-            // all players are ready
-            if (!checkAllPlayersHere()) {
-                // io.emit("pollAllHere");
-            } else {
-                // everyone here and ready
-                startGame();
-            }
+        if (checkAllPlayersReady() && checkAllPlayersHere()) {
+            // everyone here and ready
+            startGame();
         }
     });
 
     socket.on("vote_all_here", (yesOrNo) => {
-        console.log("vote_all_here", yesOrNo);
+        console.log("- vote_all_here", yesOrNo);
         // set this player's allHere (all must be true to start game)
-        console.log("socket.id:", socket.id);
+        // console.log("socket.id:", socket.id);
         console.log(
             "players: ",
             players.map((p) => p.name)
         );
-        console.log(
-            "ids:",
-            players.map((p) => p.id)
-        );
-        players.find((p) => p.id === socket.id).allHere = yesOrNo;
+        // console.log(
+        //     "ids:",
+        //     players.map((p) => p.id)
+        // );
+        findPlayerById(socket.id).allHere = yesOrNo;
         // check everyone says we're all here
         if (checkAllPlayersHere()) {
             // all here
@@ -263,6 +270,11 @@ io.on("connection", (socket) => {
         //     }, 5000);
         // }
     });
+
+    // socket.on("get_waiting_players", (clientCallback) => {
+    //     console.log("- get_waiting_players");
+    //     if (clientCallback) clientCallback( waitingPlayers.map(wp=>wp.clientVersion));
+    // });
 
     // socket.on("start_game", () => {
     //     console.log("start_game");
@@ -372,9 +384,10 @@ io.on("connection", (socket) => {
     });
 */
     socket.on("disconnect", () => {
-        const disconnectedPlayer = players.find(p=>p.id === socket.id);
-        console.log('disconnected',socket.id,',',disconnectedPlayer?.name);
-        console.log('players#:',players.length);
+        const disconnectedPlayer = players.find((p) => p.id === socket.id);
+        console.log("disconnected", socket.id, ",", disconnectedPlayer?.name);
+        console.log("players#:", players.length);
+        // console.log('waitingPlayers',waitingPlayers.length);
         disconnectedPlayer?.startRemovalTimer();
 
         // const user = removeUser(socket.id);

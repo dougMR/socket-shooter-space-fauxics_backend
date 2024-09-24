@@ -51,10 +51,10 @@ const explosion = (gO, radius, outerColor, deceleration) => {
     let mass = gO.mass;
     // mass = 0 to 1
     mass = mass === undefined ? 1 : mass;
-    let particleNum = 24 + Math.round(24 * radius);
+    let particleNum = 12 + Math.round(16 * radius);
     // if (gO.type !== "missile") particleNum += Math.round(10 * mass);
     const decelerationPercent = deceleration || 0.9;
-    const maxDistance = Math.max(2, radius * 5);
+    const maxDistance = Math.max(4, radius * 5);
     // let maxSpeed = 0.8 + mass * 0.3;
 
     let maxSpeed = getInitialVelocityFromDistanceAndDeceleration(
@@ -88,8 +88,8 @@ const explosion = (gO, radius, outerColor, deceleration) => {
         }
         // x, y, radius, mass, facing, velocity, color
         let particle = new Circle(x, y, radius, mass, deg, speed, color);
-        particle.vy += gO.vy * .1 * speedPct * speedPct;
-        particle.vx += gO.vx * .1 * speedPct * speedPct;
+        particle.vy += gO.vy * .5 * speedPct * speedPct;
+        particle.vx += gO.vx * .5 * speedPct * speedPct;
         particle.lifeSpan = lifespan;
         particle.bornTime = performance.now();
         particle.deceleration = decelerationPercent; //0.93;//0.95;

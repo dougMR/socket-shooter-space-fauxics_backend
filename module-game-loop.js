@@ -189,6 +189,7 @@ function gameLoop() {
         // End Game
         stopSound("themeMusic");
         console.log("secs left", secondsLeft);
+        gameInProgress = false;
         emitEndGame();
     }
 }
@@ -196,6 +197,7 @@ function gameLoop() {
 const startGameLoop = () => {
     startTime = null;
     timedOut = timingOut = false;
+    gameInProgress = true;
     gameLoop();
 };
 // how best to stop game loop
@@ -205,5 +207,6 @@ let startTime = null;
 let prevSecondsLeft = 0;
 let timingOut = false;
 let timedOut = false;
+let gameInProgress = false;
 
-export { startGameLoop, getFps };
+export { startGameLoop, getFps, gameInProgress };

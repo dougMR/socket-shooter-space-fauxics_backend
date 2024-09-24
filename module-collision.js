@@ -40,10 +40,10 @@ const checkHitObjects = () => {
                 }
             }
         }
-        
-        if (gO.type !== "missile") {
+
+        // if (gO.type !== "missile") {
             explode(gO);
-        }
+        // }
 
         gO.destroy();
     }

@@ -12,6 +12,7 @@ class Ship extends Circle {
         this._deceleration = 0.98;
         this._alive = true;
         this._type = "ship";
+        this._color = color;
     }
     destroy() {
         const p = players.find((p) => p.ship === this);

@@ -2,11 +2,11 @@ console.log("module-players.js");
 import { Ship } from "./module-class-ship.js";
 import { getCos, getSin } from "./module-angles.js";
 import { ships } from "./server.js";
+import { gameInProgress } from "./module-game-loop.js";
 
 const maxPlayers = 8;
-// ?? Is disconnectedPlayers being used any longer?
-// const disconnectedPlayers = [];
 // players waiting to join game
+// as well as disconnected players
 const waitingPlayers = [];
 const players = [];
 const shipColors = [
@@ -20,6 +20,10 @@ const shipColors = [
     "#444",
 ];
 
+// getPlayers = () => {
+//     return players.filter(p=>p.connected === true);
+// }
+
 const resetPlayers = () => {
     // resest existing players for new game
     ships.length = 0;
@@ -28,13 +32,13 @@ const resetPlayers = () => {
         if (p.connected) {
             p.ship.alive = true;
             if (!ships.find((s) => s.playerId === p.id)) ships.push(p.ship);
+            addPlayerToGame(p);
         } else {
-            // if(p.ship){
+            // player not connected
             const shipIndex = ships.findIndex((s) => s.playerId === p.id);
             if (shipIndex > -1) {
                 ships.splice(shipIndex, 1);
             }
-            // }
         }
 
         p.ready = false;
@@ -44,6 +48,10 @@ const resetPlayers = () => {
 };
 
 const reassignStartingPositions = () => {
+    console.log(
+        "reassignStartingPositions()",
+        players.map((p) => p.name)
+    );
     // put players in circle at edge of playing field, facing towards center
     const degIncrement = 360 / players.length;
     let playerIndex = 0;
@@ -57,19 +65,12 @@ const reassignStartingPositions = () => {
     }
 };
 
-const addPlayer = (name, socketId, uuid) => {
-    console.log("addPlayer()", name);
-    // console.log("new player uuid:", uuid);
+const createPlayer = (name, socketId, uuid) => {
+    console.log("createPlayer()", name);
 
     if (players.length >= maxPlayers) {
         return { error: "Maximum players reached.  Can't add more." };
     }
-
-    // console.log("players.length:", players.length);
-    // console.log(
-    //     "players: ",
-    //     players.map((p) => p.name)
-    // );
 
     if (
         name &&
@@ -77,11 +78,10 @@ const addPlayer = (name, socketId, uuid) => {
             (player) => player.name?.toLowerCase() === name?.toLowerCase()
         )
     ) {
-        let ship = new Ship(50, 95, 1, 2, 270, 0, shipColors[players.length]);
+        // Name is available
+        let ship = new Ship(50, 95, 1, 2, 270, 0, shipColors[ships.length]);
         ship.myArray = ships;
         ships.push(ship);
-
-        // Name is available
         const newPlayer = {
             id: socketId,
             name,
@@ -93,14 +93,18 @@ const addPlayer = (name, socketId, uuid) => {
             connected: true,
             removalTimer: null,
             startRemovalTimer() {
-                // remove from players in 2 mins
+                // move me to waitingPlayers
+                const playerIndex = players.findIndex((p) => p.id === this.id);
+                players.splice(playerIndex, 1);
+                waitingPlayers.push(this);
+                // remove altogether in 2 mins
                 console.log(this.name, "startRemovalTimer()");
                 this.connected = false;
                 this.removalTimer = setTimeout(() => {
                     console.log("removing", this.name);
-                    console.log("players0", players.length);
+                    console.log("players before removal", players.length);
                     removePlayer(this.uuid);
-                    console.log("players1", players.length);
+                    console.log("players after removal", players.length);
                 }, 120000);
             },
             stopRemovalTimer() {
@@ -118,12 +122,13 @@ const addPlayer = (name, socketId, uuid) => {
                 };
             },
         };
-        players.push(newPlayer);
+        addPlayerToGame(newPlayer);
         newPlayer.ship.playerId = socketId;
         // reassign all seats
         reassignStartingPositions(players);
         console.log("newPlayer:", newPlayer.name);
         console.log("players#:", players.length);
+        console.log("waitingPlayers#:", waitingPlayers.length);
         return { success: `${newPlayer.name} added to game.` };
     }
     console.log("name already in use.");
@@ -131,42 +136,100 @@ const addPlayer = (name, socketId, uuid) => {
 };
 
 const removePlayer = (uuid) => {
-    const playerIndex = players.findIndex((p) => (p.uuid = uuid));
-    if (playerIndex > -1) players.splice(playerIndex, 1);
+    let playerIndex = players.findIndex((p) => (p.uuid = uuid));
+    if (playerIndex > -1) {
+        // remove player's ship
+        players[playerIndex].ship.destroy();
+        // remove player
+        players.splice(playerIndex, 1);
+    } else {
+        // not in players, try waitinPlayers
+        playerIndex = waitingPlayers.findIndex((p) => p.uuid === uuid);
+        if (playerIndex > -1) {
+            // remove player's ship
+            waitingPlayers[playerIndex].ship.destroy();
+            // remove player
+            waitingPlayers.splice(playerIndex, 1);
+        }
+    }
+};
+
+const addPlayerToGame = (player) => {
+    console.log("addPlayerToGame()");
+    console.log("gameInProgress:", gameInProgress);
+    if (gameInProgress) {
+        // add to waiting
+        if (!waitingPlayers.find((p) => p.id === player.id))
+            waitingPlayers.push(player);
+    } else {
+        // add to players
+        if (!players.find((p) => p.id === player.id)) players.push(player);
+    }
+};
+
+const findPlayerByUuid = (uuid) => {
+    console.log("findPlayerByUuid()")
+    let foundPlayer;
+    let playerIndex = waitingPlayers.findIndex((p) => p.uuid === uuid);
+    if (playerIndex > -1) {
+        // found them in waiting players
+        foundPlayer = waitingPlayers[playerIndex];
+        // only add to players[] if game is not in progress
+        if (!gameInProgress) {
+            // take them out and put them in players
+            waitingPlayers.splice(playerIndex, 1);
+            players.push(foundPlayer);
+        }
+    } else {
+        // not in waiting players, check in players
+        foundPlayer = players.find((p) => p.uuid === uuid);
+    }
+    console.log('foundPlayer:',foundPlayer);
+    return foundPlayer;
+};
+const findPlayerById = (id) => {
+    let foundPlayer;
+    let playerIndex = waitingPlayers.findIndex((p) => p.id === id);
+    if (playerIndex > -1) {
+        // found them in waiting players
+        foundPlayer = waitingPlayers[playerIndex];
+        // only add to players[] if game is not in progress
+        if (!gameInProgress) {
+            // take them out and put them in players
+            waitingPlayers.splice(playerIndex, 1);
+            players.push(foundPlayer);
+        }
+    } else {
+        // not in waiting players, check in players
+        foundPlayer = players.find((p) => p.id === id);
+    }
+    return foundPlayer;
 };
 
 const reconnectPlayerByUUID = (uuid, socketId) => {
     console.log("reconnectPlayerByUUID()");
-    // let foundPlayer = disconnectedPlayers.find((p) => p.uuid === uuid);
-    // if (foundPlayer === undefined) {
-
-    // check in connected players
-    let foundPlayer = players.find((p) => p.uuid === uuid);
-    // } else {
-    //     // found player in disconnectedPlayers, take them out
-    //     disconnectedPlayers.splice(disconnectIndex, 1);
-    // }
-
-    if (foundPlayer === undefined) {
-        // player not found
-        console.log("player not found");
-        return false;
-    } else {
+    const foundPlayer = findPlayerByUuid(uuid);
+    if (foundPlayer) {
         // player found
         console.log("found player.", foundPlayer.name);
         foundPlayer.id = foundPlayer.ship.playerId = socketId;
         foundPlayer.stopRemovalTimer();
-        // if we found them in disconnectedPlayers, put them in players
-        // if (!players.includes(foundPlayer)) players.push(foundPlayer); // <- can't use .includes to find an object
         return true;
+    } else {
+        // player not found
+        console.log("player not found");
+        return false;
     }
 };
 
 export {
-    addPlayer,
+    createPlayer,
     reconnectPlayerByUUID,
     players,
+    waitingPlayers,
     // disconnectedPlayers,
+    findPlayerByUuid,
+    findPlayerById,
     resetPlayers,
     reassignStartingPositions,
 };
