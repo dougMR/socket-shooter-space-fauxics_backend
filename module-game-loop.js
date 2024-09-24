@@ -152,8 +152,6 @@ function gameLoop() {
         }
     }
 
-    
-
     const timePassed = (timeStamp - startTime) / 1000;
     let secondsLeft = Math.max(0, Math.floor(totalSeconds - timePassed));
 
@@ -190,6 +188,8 @@ function gameLoop() {
         stopSound("themeMusic");
         console.log("secs left", secondsLeft);
         gameInProgress = false;
+        // Change onDeck players to ready
+        players.forEach((p) => (p.onDeck = false));
         emitEndGame();
     }
 }

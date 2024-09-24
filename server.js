@@ -50,8 +50,8 @@ const io = new Server(server, {
 
 import {
     players,
-    waitingPlayers,
-    // disconnectedPlayers,
+    playersConnected,
+    playersInGame,
     reconnectPlayerByUUID,
     createPlayer,
     resetPlayers,
@@ -75,11 +75,9 @@ import {
 const emitPlayers = () => {
     console.log("emitPlayers()");
     const frontendPlayers = players.map((p) => p.clientVersion);
-    const frontendWaitingPlayers = waitingPlayers.map((p) => p.clientVersion);
 
     io.emit("updatePlayers", {
         players: frontendPlayers,
-        waitingPlayers: frontendWaitingPlayers,
     });
 };
 
@@ -134,11 +132,13 @@ const emitGameState = () => {
     io.emit("updateGameData", gameData);
 };
 
-const checkAllPlayersHere = () => {
-    return !players.some((p) => p.allHere === false);
-};
+// const checkAllPlayersHere = () => {
+//     const players = playersConnected();
+//     return !players.some((p) => p.allHere === false);
+// };
 
 const checkAllPlayersReady = () => {
+    const players = playersConnected();
     return !players.some((p) => p.ready === false);
 };
 
@@ -235,45 +235,41 @@ io.on("connection", (socket) => {
         const socketPlayer = players.find((p) => p.id === socket.id);
         if (!socketPlayer) return;
         socketPlayer.ready = true;
-        if (checkAllPlayersReady() && checkAllPlayersHere()) {
+        // if (checkAllPlayersReady() && checkAllPlayersHere()) {
+        if (checkAllPlayersReady()) {
             // everyone here and ready
             startGame();
         }
     });
 
-    socket.on("vote_all_here", (yesOrNo) => {
-        console.log("- vote_all_here", yesOrNo);
-        // set this player's allHere (all must be true to start game)
-        // console.log("socket.id:", socket.id);
-        console.log(
-            "players: ",
-            players.map((p) => p.name)
-        );
-        // console.log(
-        //     "ids:",
-        //     players.map((p) => p.id)
-        // );
-        findPlayerById(socket.id).allHere = yesOrNo;
-        // check everyone says we're all here
-        if (checkAllPlayersHere()) {
-            // all here
-            // double check we're all ready
-            if (checkAllPlayersReady()) {
-                // everyone's here and ready
+    // socket.on("vote_all_here", (yesOrNo) => {
+    //     console.log("- vote_all_here", yesOrNo);
+    //     // set this player's allHere (all must be true to start game)
+    //     // console.log("socket.id:", socket.id);
+    //     console.log(
+    //         "players: ",
+    //         players.map((p) => p.name)
+    //     );
+    //     // console.log(
+    //     //     "ids:",
+    //     //     players.map((p) => p.id)
+    //     // );
+    //     findPlayerById(socket.id).allHere = yesOrNo;
+    //     // check everyone says we're all here
+    //     // if (checkAllPlayersHere()) {
+    //         // all here
+    //         // double check we're all ready
+    //         if (checkAllPlayersReady()) {
+    //             // everyone's here and ready
 
-                startGame();
-            }
-        }
-        // else {
-        //     setTimeout(() => {
-        //         io.emit("pollAllHere");
-        //     }, 5000);
-        // }
-    });
-
-    // socket.on("get_waiting_players", (clientCallback) => {
-    //     console.log("- get_waiting_players");
-    //     if (clientCallback) clientCallback( waitingPlayers.map(wp=>wp.clientVersion));
+    //             startGame();
+    //         }
+    //     // }
+    //     // else {
+    //     //     setTimeout(() => {
+    //     //         io.emit("pollAllHere");
+    //     //     }, 5000);
+    //     // }
     // });
 
     // socket.on("start_game", () => {
@@ -337,7 +333,8 @@ io.on("connection", (socket) => {
         }
     });
 
-    socket.on("broadcast_sound", (soundString) => {
+    socket.on("broadcast_sound", (playerId, soundString) => {
+        console.log("broadcast_sound", soundString);
         socket.broadcast.emit("playSound", soundString);
     });
 
@@ -387,17 +384,15 @@ io.on("connection", (socket) => {
         const disconnectedPlayer = players.find((p) => p.id === socket.id);
         console.log("disconnected", socket.id, ",", disconnectedPlayer?.name);
         console.log("players#:", players.length);
-        // console.log('waitingPlayers',waitingPlayers.length);
         disconnectedPlayer?.startRemovalTimer();
-
-        // const user = removeUser(socket.id);
-        // if (user) {
-        //     io.to(user.room).emit("message", {
-        //         user: "admin",
-        //         text: `${user.name} had left`,
-        //     });
-        // }
+        // let clients know
+        emitPlayers();
     });
+
+
+
+
+    
     //
     // DB "API" Endpoints
     //

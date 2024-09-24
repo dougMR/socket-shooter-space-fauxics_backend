@@ -5,9 +5,6 @@ import { ships } from "./server.js";
 import { gameInProgress } from "./module-game-loop.js";
 
 const maxPlayers = 8;
-// players waiting to join game
-// as well as disconnected players
-const waitingPlayers = [];
 const players = [];
 const shipColors = [
     "red",
@@ -42,7 +39,7 @@ const resetPlayers = () => {
         }
 
         p.ready = false;
-        p.allHere = false;
+        // p.allHere = false;
     }
     reassignStartingPositions();
 };
@@ -89,14 +86,12 @@ const createPlayer = (name, socketId, uuid) => {
             score: 0,
             ship,
             ready: false,
-            allHere: false,
+            // allHere: false,
             connected: true,
             removalTimer: null,
+            onDeck: false,
             startRemovalTimer() {
-                // move me to waitingPlayers
-                const playerIndex = players.findIndex((p) => p.id === this.id);
-                players.splice(playerIndex, 1);
-                waitingPlayers.push(this);
+                // flag for removal
                 // remove altogether in 2 mins
                 console.log(this.name, "startRemovalTimer()");
                 this.connected = false;
@@ -119,6 +114,8 @@ const createPlayer = (name, socketId, uuid) => {
                     uuid: this.uuid,
                     score: this.score,
                     ship: this.ship.clientVersion,
+                    onDeck: this.onDeck,
+                    connected: this.connected,
                 };
             },
         };
@@ -128,7 +125,6 @@ const createPlayer = (name, socketId, uuid) => {
         reassignStartingPositions(players);
         console.log("newPlayer:", newPlayer.name);
         console.log("players#:", players.length);
-        console.log("waitingPlayers#:", waitingPlayers.length);
         return { success: `${newPlayer.name} added to game.` };
     }
     console.log("name already in use.");
@@ -142,15 +138,6 @@ const removePlayer = (uuid) => {
         players[playerIndex].ship.destroy();
         // remove player
         players.splice(playerIndex, 1);
-    } else {
-        // not in players, try waitinPlayers
-        playerIndex = waitingPlayers.findIndex((p) => p.uuid === uuid);
-        if (playerIndex > -1) {
-            // remove player's ship
-            waitingPlayers[playerIndex].ship.destroy();
-            // remove player
-            waitingPlayers.splice(playerIndex, 1);
-        }
     }
 };
 
@@ -159,50 +146,20 @@ const addPlayerToGame = (player) => {
     console.log("gameInProgress:", gameInProgress);
     if (gameInProgress) {
         // add to waiting
-        if (!waitingPlayers.find((p) => p.id === player.id))
-            waitingPlayers.push(player);
-    } else {
-        // add to players
-        if (!players.find((p) => p.id === player.id)) players.push(player);
+        player.onDeck = true;
     }
+    // add to players (if no player of this id alreay in players)
+    if (!players.find((p) => p.id === player.id)) players.push(player);
 };
 
 const findPlayerByUuid = (uuid) => {
-    console.log("findPlayerByUuid()")
-    let foundPlayer;
-    let playerIndex = waitingPlayers.findIndex((p) => p.uuid === uuid);
-    if (playerIndex > -1) {
-        // found them in waiting players
-        foundPlayer = waitingPlayers[playerIndex];
-        // only add to players[] if game is not in progress
-        if (!gameInProgress) {
-            // take them out and put them in players
-            waitingPlayers.splice(playerIndex, 1);
-            players.push(foundPlayer);
-        }
-    } else {
-        // not in waiting players, check in players
-        foundPlayer = players.find((p) => p.uuid === uuid);
-    }
-    console.log('foundPlayer:',foundPlayer);
+    console.log("findPlayerByUuid()");
+    const foundPlayer = players.find((p) => p.uuid === uuid);
     return foundPlayer;
 };
 const findPlayerById = (id) => {
-    let foundPlayer;
-    let playerIndex = waitingPlayers.findIndex((p) => p.id === id);
-    if (playerIndex > -1) {
-        // found them in waiting players
-        foundPlayer = waitingPlayers[playerIndex];
-        // only add to players[] if game is not in progress
-        if (!gameInProgress) {
-            // take them out and put them in players
-            waitingPlayers.splice(playerIndex, 1);
-            players.push(foundPlayer);
-        }
-    } else {
-        // not in waiting players, check in players
-        foundPlayer = players.find((p) => p.id === id);
-    }
+    const foundPlayer = players.find((p) => p.id === id);
+    // }
     return foundPlayer;
 };
 
@@ -222,12 +179,22 @@ const reconnectPlayerByUUID = (uuid, socketId) => {
     }
 };
 
+const playersConnected = () => {
+    // get list of connected players
+    return players.filter((p) => p.connected);
+};
+
+const playersInGame = () => {
+    // get list of connected players not on deck
+    return players.filter((p) => !p.onDeck && p.connected);
+};
+
 export {
     createPlayer,
     reconnectPlayerByUUID,
     players,
-    waitingPlayers,
-    // disconnectedPlayers,
+    playersConnected,
+    playersInGame,
     findPlayerByUuid,
     findPlayerById,
     resetPlayers,
