@@ -35,6 +35,8 @@ class Circle {
         this._myArray = null;
         this._deceleration = 1;
 
+        this._value = 0;
+
         // this.getCoordByPct = (pct) => {
         //     // console.log('this._canvas.width',this._canvas.width);
         //     return pct * this._canvas.width * 0.01;
@@ -51,7 +53,7 @@ class Circle {
             this.vx += thrustX;
             this.vy += thrustY;
             // this.velocity = Math.max(-1, Math.min(1, this.velocity));
-            this.velocity = Math.max(-0.5, Math.min(0.5, this.velocity));
+            this.velocity = Math.max(-0.4, Math.min(0.4, this.velocity));
         };
         this.decelerate = () => {
             this.velocity *= this._deceleration;
@@ -95,9 +97,9 @@ class Circle {
     }
 
     destroy() {
-
         if (this._myArray) {
-            this._myArray.splice(this._myArray.indexOf(this), 1);
+            const myIndex = this._myArray.findIndex((item) => item === this);
+            if (myIndex > -1) this._myArray.splice(myIndex, 1);
         }
 
         if (this._image) {
@@ -159,6 +161,12 @@ class Circle {
         ctx.translate(-x, -y);
     }
     */
+    get value() {
+        return this._value;
+    }
+    set value(value){
+        this._value = value;
+    }
     get x() {
         return this._x;
     }
@@ -239,7 +247,18 @@ class Circle {
         return this._myArray;
     }
     set myArray(value) {
+        if (this._myArray) {
+            // remove from old array
+            const index = this._myArray.this._myArray.findIndex(
+                (item) => item === this
+            );
+            if (index > -1) {
+                this._myArray.splice(index, 1);
+            }
+        }
         this._myArray = value;
+        // add to new array
+        this._myArray.push(this);
     }
     set deceleration(value) {
         this._deceleration = value;

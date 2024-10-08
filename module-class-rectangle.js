@@ -1,5 +1,4 @@
 import { getCos, getSin, degreesToRadians } from "./module-angles.js";
-import { brightenColor, darkenColor } from "./libs/colorUtilities.js";
 
 class Rectangle {
     constructor(x, y, width, height, color) {

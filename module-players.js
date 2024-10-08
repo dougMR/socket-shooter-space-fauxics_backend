@@ -78,7 +78,7 @@ const createPlayer = (name, socketId, uuid) => {
         // Name is available
         let ship = new Ship(50, 95, 1, 2, 270, 0, shipColors[ships.length]);
         ship.myArray = ships;
-        ships.push(ship);
+        // ships.push(ship);
         const newPlayer = {
             id: socketId,
             name,
@@ -150,6 +150,10 @@ const addPlayerToGame = (player) => {
     }
     // add to players (if no player of this id alreay in players)
     if (!players.find((p) => p.id === player.id)) players.push(player);
+    // set all ship colors
+    for(let i = 0; i < ships.length; i++){
+        ships[i].color = shipColors[i];
+    }
 };
 
 const findPlayerByUuid = (uuid) => {

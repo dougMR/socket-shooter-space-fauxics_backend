@@ -7,17 +7,20 @@ const handlePoints = (missile, target) => {
     // console.log('playerIds: ',players.map(p=>p.id));
     // console.log('playerUUIDs: ',players.map(p=>p.uuid));
 
+    // !!! Make point value property of gameObject (circle).
     const missilePlayer = players.find((p) => p.id === missile.myShip.playerId);
-    switch (target.type) {
-        case "ship":
-            // IS this the only place we can know who shot the ship?
-            missilePlayer.score += 5;
-            break;
-        case "asteroid":
-            missilePlayer.score+= 5-target.radius;
-            // console.log(missilePlayer.name + " - " + missilePlayer.score);
-            break;
-    }
+    missilePlayer.score += target.value;
+    // switch (target.type) {
+    //     case "ship":
+    //         // IS this the only place we can know who shot the ship?
+    //         missilePlayer.score += 5;
+    //         break;
+    //     case "asteroid":
+    //         // v Very hacky way to get asteroid points
+    //         missilePlayer.score += 5-target.radius;
+    //         // console.log(missilePlayer.name + " - " + missilePlayer.score);
+    //         break;
+    // }
 };
 
 // ===============================
@@ -57,7 +60,7 @@ function checkHit(circles) {
             }
             let hit = runHitTest(A, B);
             if (hit === 0) {
-                // missile hit something
+                // missile hit something or mine hit something other than asteroid
                 // destroy both
                 // console.log("DESTORY");
 
@@ -119,9 +122,11 @@ function runHitTest(A, B) {
         // x, y, radius, mass, facing, velocity, color, label
         if (
             (A.type === "missile" && A.myShip != B) ||
-            (B.type === "missile" && B.myShip != A)
+            (B.type === "missile" && B.myShip != A) ||
+            (A.type === "mine" && B.type === "ship") ||
+            (B.type === "mine" && A.type === "ship")
         ) {
-            // missile hit something
+            // missile or mine hit something
             return 0;
         }
         collide(A, B, hitTime);

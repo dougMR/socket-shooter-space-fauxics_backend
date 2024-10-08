@@ -2,8 +2,11 @@ import {
     stopSound,
     emitTime,
     emitGameState,
+    emitPlayers,
     ships,
     missiles,
+    mines,
+    shockwaves,
     obstacles,
     debris,
     asteroids,
@@ -13,9 +16,10 @@ import {
     checkCirclesHitRectangles,
     checkHitObjects,
 } from "./module-collision.js";
-import { players } from "./module-players.js";
+import { players, playersInGame } from "./module-players.js";
 import { degreesToRadians } from "./module-angles.js";
 import { stopCircleRectOverlap } from "./module-circle-rect-intersect.js";
+import { explode } from "./module-explosions.js";
 
 const keepInBounds = (obj) => {
     if (obj.x >= 100 - obj.radius || obj.x <= obj.radius) {
@@ -103,9 +107,10 @@ function gameLoop() {
     // }
 
     // Check Collision
-    rotateObstacles();
+    
     checkHitObjects();
     checkCirclesHitRectangles();
+    rotateObstacles();
 
     // move asteroids
     for (const a of asteroids) {
@@ -142,7 +147,18 @@ function gameLoop() {
         }
     }
 
-    // move / draw ships
+    // move mines
+    for (const m of mines) {
+        m.move();
+        keepInBounds(m);
+        // do this with all circles and obstacles altogether?
+        for (const o of obstacles) {
+            // undo overlaps
+            stopCircleRectOverlap(m, o);
+        }
+    }
+
+    // move ships
     for (const ship of ships) {
         ship.move();
         keepInBounds(ship);
@@ -152,10 +168,26 @@ function gameLoop() {
         }
     }
 
+    // move shockwaves
+    for (const sw of shockwaves) {
+        sw.move();
+        for (const gO of [...asteroids, ...ships, ...missiles, ...mines]) {
+            if (gO !== sw.myShip && sw.checkCollision(gO)) {
+                // destroy gO
+                const minePlayer = players.find(
+                    (p) => p.id === sw.myShip.playerId
+                );
+                minePlayer.score += gO.value;
+                explode(gO);
+                gO.destroy();
+            }
+        }
+    }
+
     const timePassed = (timeStamp - startTime) / 1000;
     let secondsLeft = Math.max(0, Math.floor(totalSeconds - timePassed));
 
-    if (ships.length === 1 && !timingOut && players.length > 1) {
+    if (ships.length === 0 || playersInGame().length === 0 ||(ships.length === 1 && !timingOut && playersInGame().length > 1)) {
         // Last player.  Give them 1 points for each remaining second (times num players), and end game.
         timingOut = true;
         setTimeout(() => {
@@ -167,10 +199,15 @@ function gameLoop() {
             }
             timedOut = true;
         }, 1000);
-    } else if (ships.length === 0) {
-        // No players left.  End game.
-        secondsLeft = 0;
-    }
+    } 
+    // else if (ships.length === 0 || playersInGame().length === 0) {
+    //     // No players left.  End game.
+    //     console.log("no ships, set secondsLeft to 0");
+    //     setTimeout(() => {
+
+    //         timedOut = true;
+    //     }, 1000);
+    // }
     frames++;
     if (secondsLeft !== prevSecondsLeft) {
         prevSecondsLeft = secondsLeft;
@@ -182,23 +219,34 @@ function gameLoop() {
     emitGameState();
     if (secondsLeft > 0 && !timedOut) {
         // setImmediate(gameLoop);
-        setTimeout(gameLoop, 17);
+        setTimeout(gameLoop, 16);
     } else {
         // End Game
         stopSound("themeMusic");
         console.log("secs left", secondsLeft);
-        gameInProgress = false;
-        // Change onDeck players to ready
-        players.forEach((p) => (p.onDeck = false));
-        emitEndGame();
+        console.log("timePassed", timePassed);
+        secondsLeft = 0;
+        stopGame();
     }
 }
+
+const stopGame = () => {
+    gameInProgress = false;
+    // Change onDeck players to ready
+    players.forEach((p) => (p.onDeck = false));
+    emitEndGame();
+    emitPlayers();
+};
 
 const startGameLoop = () => {
     startTime = null;
     timedOut = timingOut = false;
     gameInProgress = true;
     gameLoop();
+};
+
+const setGameInProgress = (value) => {
+    if (typeof value === "boolean") gameInProgress = value;
 };
 // how best to stop game loop
 
@@ -209,4 +257,4 @@ let timingOut = false;
 let timedOut = false;
 let gameInProgress = false;
 
-export { startGameLoop, getFps, gameInProgress };
+export { startGameLoop, getFps, gameInProgress, setGameInProgress };

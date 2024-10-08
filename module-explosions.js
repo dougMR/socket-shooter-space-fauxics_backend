@@ -1,14 +1,15 @@
-import { asteroids, ships, debris, emitSound } from "./server.js";
+import { asteroids, ships, shockwaves, debris, emitSound } from "./server.js";
 import { mixHexColors } from "./libs/colorUtilities.js";
 import { Circle } from "./module-class-circle.js";
 import { getInitialVelocityFromDistanceAndDeceleration } from "./temp-brute-deceleration.js";
+import { Shockwave } from "./module-class-shockwave.js";
 
 // Explosions
 //
 ////////////////
 
 const detonateShockwave = (x, y, r) => {
-    const gosToCheck = [...asteroids, ...ships]; //, ...debris];
+    const gosToCheck = [...asteroids, ...ships, ...debris];
     // get GOs in radius
     const affectedGos = gosToCheck.filter(
         (go) => Math.pow(go.x - x, 2) + Math.pow(go.y - y, 2) < r * r
@@ -22,7 +23,10 @@ const detonateShockwave = (x, y, r) => {
             // prevent dividing by zero
             // make better solution later...
             const dist = Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2));
-            const magnitude = 2 * (1 - dist / r);
+            let magnitude = 2 * (1 - dist / r);
+            if (gO.type === "debris") {
+                magnitude /= Math.max(1, gO.radius * 2);
+            }
             const unitVx = xDiff / dist;
             const unitVy = yDiff / dist;
             const xForce = maxForce * unitVx * magnitude;
@@ -41,7 +45,7 @@ const explosion = (gO, radius, outerColor, deceleration) => {
     const y = gO.y;
 
     // Shockwave
-    const swRadius = 4 + radius * 4;
+    const swRadius = gO.type === "mine" ? radius * 4 : 4 + radius * 4;
     detonateShockwave(x, y, swRadius);
     // Debris
     let yellow = "#ffff00"; //"#ff0000";//
@@ -88,12 +92,12 @@ const explosion = (gO, radius, outerColor, deceleration) => {
         }
         // x, y, radius, mass, facing, velocity, color
         let particle = new Circle(x, y, radius, mass, deg, speed, color);
-        particle.vy += gO.vy * .5 * speedPct * speedPct;
-        particle.vx += gO.vx * .5 * speedPct * speedPct;
+        particle.vy += gO.vy * 0.5 * speedPct * speedPct;
+        particle.vx += gO.vx * 0.5 * speedPct * speedPct;
         particle.lifeSpan = lifespan;
         particle.bornTime = performance.now();
         particle.deceleration = decelerationPercent; //0.93;//0.95;
-        particle.myArray = debris;
+        // particle.myArray = debris;
         particle.type = "debris";
         // debris.push(particle);
         blastParticles.push(particle);
@@ -101,22 +105,67 @@ const explosion = (gO, radius, outerColor, deceleration) => {
     blastParticles.sort((a, b) => {
         a.velocity < b.velocity;
     });
-    debris.push(...blastParticles);
+    // debris.push(...blastParticles);
+    for (const p of blastParticles) {
+        p.myArray = debris;
+    }
 };
 
 const explode = (gO) => {
-    explosion(gO, gO.radius * 0.8, "#ffff00", 0.94);
-            // play sound
-            if (gO.radius > 3) {
-                emitSound("explode8bit");
-            } else if (gO.radius > 2) {
-                emitSound("explodeMid");
-            } else {
-                emitSound("explodeSound");
+    // break up asteroids
+    if (gO.type === "asteroid") {
+        if (gO.radius > 2) {
+            const newR = gO.radius - 1;
+            let startX = gO.x - newR * 0.5;
+            let startY = gO.y - newR * 0.5;
+            for (let i = 0; i < 2; i++) {
+                let newCircle = new Circle(
+                    startX,
+                    startY,
+                    newR,
+                    (newR * newR) / 8,
+                    // 3,1,
+                    0,
+                    gO.velocity * 0.7,
+                    "gradient"
+                );
+                newCircle.type = "asteroid";
+                newCircle.moveAngle = gO.moveAngle;
+                // Asteroid should be its own class
+                newCircle.value = 5 - newCircle.radius;
+                // asteroids.push(newCircle);
+                newCircle.myArray = asteroids;
+                newCircle.deceleration = 0.999;
+                startX += newR;
+                startY += newR;
             }
+        }
+    }
+    const radius = gO.type === "mine" ? 6 : gO.radius * 0.8;
+    if (gO.type === "mine") {
+        setTimeout(() => {
+            explosion(gO, radius, "#ffff00", 0.94);
+        }, 250);
+    } else {
+        explosion(gO, radius, "#ffff00", 0.94);
+    }
+    // play sound
+    if (gO.radius > 3 || gO.mass > 3) {
+        emitSound("explode8bit");
+    } else if (gO.radius > 2) {
+        emitSound("explodeMid");
+    } else {
+        emitSound("explodeSound");
+    }
     setTimeout(() => {
         explosion(gO);
     }, 150);
+    if (gO.type === "mine") {
+        // replace it with a shockwave
+        const sw = new Shockwave(gO.x, gO.y, 0.2);
+        sw.myArray = shockwaves;
+        sw.myShip = gO.myShip;
+    }
 };
 
 export { explode };

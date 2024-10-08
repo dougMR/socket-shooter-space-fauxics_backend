@@ -60,7 +60,13 @@ import {
     findPlayerByUuid,
 } from "./module-players.js";
 import { Missile } from "./module-class-missile.js";
-import { startGameLoop, getFps } from "./module-game-loop.js";
+import { Mine } from "./module-class-mine.js";
+import {
+    startGameLoop,
+    getFps,
+    gameInProgress,
+    setGameInProgress,
+} from "./module-game-loop.js";
 import { getCos, getSin } from "./module-angles.js";
 import {
     generateAsteroids,
@@ -86,6 +92,8 @@ const startGame = () => {
     // generateObstacles();
     asteroids.length = 0;
     obstacles.length = 0;
+    mines.length = 0;
+    shockwaves.length = 0;
     resetPlayers();
     console.log("done resetPlayers()");
     generateObstacles();
@@ -122,11 +130,14 @@ const emitGameState = () => {
     const gameData = {
         asteroids: asteroids.map((a) => a.clientVersion),
         missiles: missiles.map((m) => m.clientVersion),
+        mines: mines.map((m) => m.clientVersion),
+        shockwaves: shockwaves.map((s) => s.clientVersion),
         debris: debris.map((d) => d.clientVersion),
         obstacles: obstacles.map((o) => o.clientVersion),
         ships: ships.map((s) => s.clientVersion),
         players: players.map((p) => p.clientVersion),
         fps: getFps(),
+        inProgress: gameInProgress,
         // add players: when scoring is implemented
     };
     io.emit("updateGameData", gameData);
@@ -138,13 +149,15 @@ const emitGameState = () => {
 // };
 
 const checkAllPlayersReady = () => {
-    const players = playersConnected();
+    const players = playersInGame();
     return !players.some((p) => p.ready === false);
 };
 
 // POINT OF ENTRY
 const asteroids = [];
 const missiles = [];
+const mines = [];
+const shockwaves = [];
 const debris = [];
 const obstacles = [];
 const ships = [];
@@ -217,12 +230,22 @@ io.on("connection", (socket) => {
         if (uuid && clientCallback) {
             const success = reconnectPlayerByUUID(uuid, socket.id);
             console.log("rejoin success:", success);
+            const player = findPlayerByUuid(uuid);
             clientCallback({
                 success,
                 // name: players.find((p) => p.id === socket.id)?.name,
-                name: findPlayerByUuid(uuid)?.name,
+                name: player?.name,
             });
             if (success) {
+                console.log("gameInProgress:", gameInProgress);
+                if (gameInProgress) {
+                    // console.log("ships",ships);
+                    console.log("player.id", player.id);
+                    console.log("player.ship:", player.ship);
+                    player.onDeck = true;
+                    player.ship?.destroy();
+                }
+                // console.log("ships",ships);
                 emitPlayers();
             }
         }
@@ -312,10 +335,36 @@ io.on("connection", (socket) => {
             missile.type = "missile";
             missile.bornTime = performance.now();
             missile.lifeSpan = 1500;
-            missiles.push(missile);
+            // missiles.push(missile);
             missile.myArray = missiles;
             missile.myShip = ship;
             // console.log("shot missile - p.id: ",missile.myShip.playerId);
+        }
+    });
+
+    socket.on("ship_shoot_mine", (playerId) => {
+        console.log("ship_shoot_mine");
+        const ship = players.find((p) => p.id === playerId)?.ship;
+        if (ship) {
+            // generate mine at Ship's nose
+            const noseX = ship.x + getCos(ship.facing) * ship.radius * 0.7;
+            const noseY = ship.y + getSin(ship.facing) * ship.radius * 0.7;
+            // mine constructor(x, y, radius, mass, facing, velocity, color)
+            const mine = new Mine(
+                noseX,
+                noseY,
+                1,
+                10,
+                ship.facing,
+                ship.velocity + 2,
+                "#cc0000"
+            );
+            mine.type = "mine";
+            mine.bornTime = performance.now();
+            mine.lifeSpan = 1500;
+            // mines.push(mine);
+            mine.myArray = mines;
+            mine.myShip = ship;
         }
     });
 
@@ -334,8 +383,12 @@ io.on("connection", (socket) => {
     });
 
     socket.on("broadcast_sound", (playerId, soundString) => {
-        console.log("broadcast_sound", soundString);
+        // console.log("broadcast_sound", soundString);
         socket.broadcast.emit("playSound", soundString);
+    });
+
+    socket.on("get_game_status", (clientCallback) => {
+        clientCallback({ inProgress: gameInProgress });
     });
 
     /*
@@ -385,14 +438,14 @@ io.on("connection", (socket) => {
         console.log("disconnected", socket.id, ",", disconnectedPlayer?.name);
         console.log("players#:", players.length);
         disconnectedPlayer?.startRemovalTimer();
+        if (playersInGame().length === 0) {
+            // HANDLE THIS SOMEWHERE ELSE???
+            setGameInProgress(false);
+        }
         // let clients know
         emitPlayers();
     });
 
-
-
-
-    
     //
     // DB "API" Endpoints
     //
@@ -515,8 +568,11 @@ export {
     obstacles,
     debris,
     missiles,
+    mines,
+    shockwaves,
     emitTime,
     emitGameState,
+    emitPlayers,
     emitSound,
     stopSound,
     emitEndGame,
