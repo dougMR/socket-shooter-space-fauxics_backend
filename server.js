@@ -97,7 +97,7 @@ const startGame = () => {
     resetPlayers();
     console.log("done resetPlayers()");
     generateObstacles();
-    generateAsteroids(50);
+    generateAsteroids(40);
     io.emit("startGame");
     for (const ship of ships) {
         ship.alive = true;
@@ -126,6 +126,10 @@ const emitTime = (remaining) => {
     io.emit("showTime", remaining);
 };
 
+const emitShipDestroyed = (playerId) => {
+    io.emit("shipDestroyed",playerId)
+}
+
 const emitGameState = () => {
     const gameData = {
         asteroids: asteroids.map((a) => a.clientVersion),
@@ -150,6 +154,7 @@ const emitGameState = () => {
 
 const checkAllPlayersReady = () => {
     const players = playersInGame();
+    console.log("checkAllPlayersReady,",playersInGame().map(p=>p.name));
     return !players.some((p) => p.ready === false);
 };
 
@@ -262,6 +267,9 @@ io.on("connection", (socket) => {
         if (checkAllPlayersReady()) {
             // everyone here and ready
             startGame();
+        }else{
+            // let front end know who's ready
+            emitPlayers();
         }
     });
 
@@ -576,4 +584,5 @@ export {
     emitSound,
     stopSound,
     emitEndGame,
+    emitShipDestroyed
 };

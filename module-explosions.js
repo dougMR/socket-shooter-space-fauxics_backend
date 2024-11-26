@@ -24,6 +24,8 @@ const detonateShockwave = (x, y, r) => {
             // make better solution later...
             const dist = Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2));
             let magnitude = 2 * (1 - dist / r);
+            // affect less for higher mass objects - for now, magic number /10
+            magnitude -= gO.mass/10;
             if (gO.type === "debris") {
                 magnitude /= Math.max(1, gO.radius * 2);
             }

@@ -13,6 +13,7 @@ class Ship extends Circle {
         this._alive = true;
         this._type = "ship";
         this._color = color;
+        this._mass = 4;
         this.value = 5;
     }
     destroy() {
@@ -20,58 +21,6 @@ class Ship extends Circle {
         this.alive = false;
         super.destroy();
     }
-    /*    draw() {
-        // super.draw();
-        const x = this.getCoordByPct(this._x);
-        const y = this.getCoordByPct(this._y);
-        const radius = this.getCoordByPct(this._radius);
-        // rotate, translate
-        ctx.translate(x, y);
-        ctx.rotate(degreesToRadians(this._facing));
-        //
-        if (this._image !== null) {
-            ctx.drawImage(
-                this._image,
-                -radius,
-                -radius,
-                radius * 2,
-                radius * 2
-            );
-
-        } else {
-            // Circle
-            ctx.beginPath();
-            ctx.arc(0, 0, radius, 0, 2 * Math.PI);
-            ctx.closePath();
-            ctx.strokeStyle = this._color;
-            ctx.stroke();
-            // SHip
-            ctx.beginPath();
-            ctx.moveTo(radius, 0);
-            ctx.lineTo(-radius, 0.7 * radius);
-            ctx.lineTo(-radius, -0.7 * radius);
-            ctx.lineTo(radius, 0);
-            ctx.closePath();
-            ctx.fillStyle = this._color;
-            ctx.fill();
-        }
-        if(this.thrusting){
-
-            ctx.moveTo(-radius,-radius * 0.3);
-            ctx.beginPath();
-            ctx.lineTo(-radius,radius*0.3);
-            ctx.lineTo(-radius*1.3,0);
-            ctx.lineTo(-radius,-radius * 0.3);
-            ctx.fillStyle = "yellow";
-            ctx.fill();
-
-        }
-
-        // un-rotate / un-translate
-        ctx.rotate(-degreesToRadians(this._facing));
-        ctx.translate(-x, -y);
-    }
-        */
 
     get alive() {
         return this._alive;
@@ -102,7 +51,7 @@ class Ship extends Circle {
     }
 
     get clientVersion() {
-        const shipObject = {
+        const shipObject = Object.assign({}, super.clientVersion, {
             x: this._x,
             y: this._y,
             radius: this._radius,
@@ -112,7 +61,8 @@ class Ship extends Circle {
             thrusting: this._thrusting,
             alive: this._alive,
             playerId: this.playerId,
-        };
+            mass: this._mass,
+        });
         return shipObject;
     }
 }

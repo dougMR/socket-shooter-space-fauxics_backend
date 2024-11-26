@@ -116,6 +116,7 @@ const createPlayer = (name, socketId, uuid) => {
                     ship: this.ship.clientVersion,
                     onDeck: this.onDeck,
                     connected: this.connected,
+                    ready: this.ready
                 };
             },
         };

@@ -1,7 +1,6 @@
 import { Circle } from "./module-class-circle.js";
 import { degreesToRadians } from "./module-angles.js";
 
-
 class Missile extends Circle {
     constructor(x, y, radius, mass, facing, velocity, color) {
         super(x, y, radius, mass, facing, velocity, color);
@@ -11,7 +10,11 @@ class Missile extends Circle {
 
     move(distance) {
         super.move();
-        this._xyHistory.unshift({ x: this._x, y: this._y, radians: this.radians });
+        this._xyHistory.unshift({
+            x: this._x,
+            y: this._y,
+            radians: this.radians,
+        });
         if (this._xyHistory.length > 20) this._xyHistory.length = 20;
     }
 
@@ -57,8 +60,7 @@ class Missile extends Circle {
     // }
 
     get clientVersion() {
-
-        const missileObject = {
+        const missileObject = Object.assign({}, super.clientVersion, {
             x: this._x,
             y: this._y,
             radius: this._radius,
@@ -66,8 +68,9 @@ class Missile extends Circle {
             radians: this.radians,
             image: this._image,
             color: this._color,
-            xyHistory: this._xyHistory
-        };
+            xyHistory: this._xyHistory,
+            mass: this._mass,
+        });
         return missileObject;
     }
 }

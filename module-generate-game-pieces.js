@@ -52,7 +52,7 @@ const generateAsteroids = (numAsteroids) => {
         // let mass = 2 / (factor * factor);
         let mass = (r * r) / 2;
 
-        let velocity = 1 / (2 * r);
+        let velocity = 2 / (2 * r);
         let newCircle = new Circle(
             r + Math.random() * (100 - r * 2),
             r + Math.random() * (100 - r * 2),

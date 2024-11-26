@@ -176,7 +176,6 @@ class Rectangle {
         this.setVertices();
     }
 
-
     // Getters / Setters
     get width() {
         return this._width;
@@ -201,11 +200,35 @@ class Rectangle {
         // console.log(this._rotation)
         this.setVertices();
     }
-    set x(value){
+    set x(value) {
         this._x = value;
     }
-    set y(value){
+    get x(){
+        return this._x;
+    }
+    get leftMostX() {
+        let minX = Infinity;
+        for (const v of this._vertices) {
+            if (v.x < minX) minX = v.x;
+        }
+        return minX;
+    }
+    get rightMostX() {
+        // let maxX = 0;
+        // for (const v of this._vertices) {
+        //     if (v.x > maxX) maxX = v.x;
+        // }
+        const maxX = this._vertices.reduce(
+            (maxX, currentVertex) => currentVertex.x > maxX ? currentVertex.x : maxX,
+            0
+        );
+        return maxX;
+    }
+    set y(value) {
         this._y = value;
+    }
+    get y(){
+        return this._y;
     }
     get vertices() {
         return this._vertices;
@@ -219,6 +242,8 @@ class Rectangle {
             rotation: this._rotation,
             image: this._image,
             color: this._color,
+            vertices: this._vertices,
+            rightMostX:this.rightMostX
         };
         return rectObject;
     }

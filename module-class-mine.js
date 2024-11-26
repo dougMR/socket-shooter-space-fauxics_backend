@@ -21,7 +21,7 @@ class Mine extends Circle {
 
     get clientVersion() {
 
-        const missileObject = {
+        const missileObject = Object.assign({},super.clientVersion,{
             x: this._x,
             y: this._y,
             radius: this._radius,
@@ -29,7 +29,8 @@ class Mine extends Circle {
             radians: this.radians,
             image: this._image,
             color: this._color,
-        };
+            mass: this._mass
+        });
         return missileObject;
     }
 }

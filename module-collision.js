@@ -1,4 +1,4 @@
-import { checkHit } from "./module-circle-circle-sweep.js";
+import { checkHit, sortCirclesByLeft } from "./module-circle-circle-sweep.js";
 import {
     asteroids,
     missiles,
@@ -6,6 +6,7 @@ import {
     ships,
     debris,
     obstacles,
+    emitShipDestroyed,
 } from "./server.js";
 import { explode } from "./module-explosions.js";
 import { checkCircleCollideRect } from "./module-circle-rect-collision.js";
@@ -23,17 +24,29 @@ const checkHitObjects = () => {
         // if (gO.type !== "missile") {
         explode(gO);
         // }
-
+        if(gO.type==="ship"){
+            emitShipDestroyed(gO.playerId);
+        }
         gO.destroy();
     }
 };
 
+function checkNoCircleRectXmotionOverlap(circle, rect) {
+    // is circle's leftmost position this move > than rect's rightmost position?
+    const circleL =
+        Math.min(circle.x, circle.x - circle.vx, circle.x + circle.vx) -
+        circle.radius;
+    const rectR = rect.rightMostX;
+    return circleL > rectR;
+}
+
 const checkCirclesHitRectangles = () => {
     const circles = [...asteroids, ...missiles, ...ships, ...debris, ...mines];
+    sortCirclesByLeft(circles);
     const rectangles = [...obstacles];
-
-    for (const c of circles) {
-        for (const r of rectangles) {
+    for (const r of rectangles) {
+        for (const c of circles) {
+            if (checkNoCircleRectXmotionOverlap(c, r)) break;
             checkCircleCollideRect(c, r);
         }
     }

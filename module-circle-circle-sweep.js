@@ -25,7 +25,7 @@ const handlePoints = (missile, target) => {
 
 // ===============================
 
-function sortByLeft(circles) {
+function sortCirclesByLeft(circles) {
     circles.sort((a, b) => {
         /* 
         !! This doesn't work with motion, only with static current position
@@ -45,7 +45,7 @@ function checkNoXmotionOverlap(a, b) {
 }
 
 function checkHit(circles) {
-    sortByLeft(circles)
+    sortCirclesByLeft(circles);
     // All circles vs all circles
     const exploders = [];
     for (let i = 0; i < circles.length; i++) {
@@ -205,6 +205,15 @@ function transferMomentum(A, B) {
     var wBx = B.vx + p * A.mass * n.x;
     var wBy = B.vy + p * A.mass * n.y;
 
+    // reduce speeds.  0.05 overall speed loss
+    // const totalMass = A.mass + B.mass;
+    // const Apercent = 0.85 + 0.1 * (B.mass / totalMass);
+    // const Bpercent = 0.85 + 0.1 * (A.mass / totalMass);
+    wAx *= 0.95;
+    wAy *= 0.95;
+    wBx *= 0.95;
+    wBy *= 0.95;
+
     return { a: { x: wAx, y: wAy }, b: { x: wBx, y: wBy } };
 }
 
@@ -291,4 +300,4 @@ function circleSweepTest(A, B) {
     return t;
 }
 
-export { checkHit };
+export { checkHit, sortCirclesByLeft };

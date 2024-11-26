@@ -263,6 +263,9 @@ class Circle {
     set deceleration(value) {
         this._deceleration = value;
     }
+    get deceleration(){
+        return this._deceleration;
+    }
 
     get clientVersion() {
         const circleObject = {
@@ -274,6 +277,7 @@ class Circle {
             image: this._image,
             color: this._color,
             type: this._type,
+            mass: this._mass
         };
         return circleObject;
     }
